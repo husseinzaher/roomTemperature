@@ -1,4 +1,4 @@
-package com.comma.roomtemp
+package com.comma.room_temperature
 
 import android.content.Context
 import android.hardware.Sensor

@@ -1,4 +1,4 @@
-package com.comma.roomtemp
+package com.comma.room_temperature
 
 import android.appwidget.AppWidgetManager
 import android.content.Context

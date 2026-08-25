@@ -26,20 +26,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.macOS:
       case TargetPlatform.windows:
       case TargetPlatform.fuchsia:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have only been configured for Android in '
-          'this project. Run `flutterfire configure` to add other '
-          'platforms.',
-        );
+        return android;
     }
   }
 
-  /// Placeholder Android options — run `flutterfire configure` to replace.
-  static const android = FirebaseOptions(
-    apiKey: 'REPLACE_ME_run_flutterfire_configure',
-    appId: '1:000000000000:android:0000000000000000000000',
-    messagingSenderId: '000000000000',
-    projectId: 'replace-me-run-flutterfire-configure',
-    storageBucket: 'replace-me-run-flutterfire-configure.appspot.com',
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyBaLeRiHCrn6xHRsKZp85iZcviSGi_gQXE',
+    appId: '1:1040907079313:android:2c8b19cab33274c775f930',
+    messagingSenderId: '1040907079313',
+    projectId: 'comma-room-temperature',
+    storageBucket: 'comma-room-temperature.firebasestorage.app',
   );
 }
