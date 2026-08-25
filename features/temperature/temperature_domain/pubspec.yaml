@@ -1,0 +1,13 @@
+name: temperature_domain
+description: "Temperature domain: reading models, repository interfaces"
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.12.0
+
+dev_dependencies:
+  mocktail: ^1.0.5
+  test: '>=1.24.0 <=1.31.1'
+  very_good_analysis: ^10.3.0

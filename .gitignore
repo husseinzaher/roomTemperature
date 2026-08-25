@@ -1,0 +1,36 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+coverage/
+*.g.dart.bak
+
+# Melos
+.melos_tool/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# macOS
+.DS_Store
+
+# Firebase (generate locally via `flutterfire configure`; keep out of git by default)
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase_options.dart
+.firebase/
+firebase-debug.log
+
+# Android signing
+**/android/key.properties
+**/*.jks
+**/*.keystore
+
+# Env
+.env

@@ -1,0 +1,75 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  semantic_pull_request:
+    if: github.event_name == 'pull_request'
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/semantic_pull_request.yml@v1
+
+  spell_check:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/spell_check.yml@v1
+
+  dart_packages:
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - features/auth/auth_domain
+          - features/auth/auth_data
+          - features/temperature/temperature_domain
+          - features/temperature/temperature_data
+          - features/history/history_domain
+          - features/history/history_data
+          - features/settings/settings_domain
+          - features/settings/settings_data
+          - features/notifications/notifications_domain
+          - features/notifications/notifications_data
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/dart_package.yml@v1
+    with:
+      working_directory: ${{ matrix.package }}
+      # Ratchet this up toward 100 as the test suite matures.
+      min_coverage: 0
+
+  flutter_packages:
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - features/auth/auth_presentation
+          - features/temperature/temperature_presentation
+          - features/history/history_presentation
+          - features/settings/settings_presentation
+          - shared/ui_kit
+          - shared/app_localization
+          - shared/home_widget_bridge
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: ${{ matrix.package }}
+      min_coverage: 0
+
+  flutter_app:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: apps/room_temperature_app
+      min_coverage: 0
+
+  build_android:
+    needs: [dart_packages, flutter_packages, flutter_app]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: flutter pub get
+        working-directory: apps/room_temperature_app
+      - run: flutter build apk --debug
+        working-directory: apps/room_temperature_app

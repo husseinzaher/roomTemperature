@@ -1,0 +1,52 @@
+name: room_temperature_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+dev_dependencies:
+  melos: ^8.5.0
+
+workspace:
+  - apps/room_temperature_app
+  - features/auth/auth_domain
+  - features/auth/auth_data
+  - features/auth/auth_presentation
+  - features/temperature/temperature_domain
+  - features/temperature/temperature_data
+  - features/temperature/temperature_presentation
+  - features/history/history_domain
+  - features/history/history_data
+  - features/history/history_presentation
+  - features/settings/settings_domain
+  - features/settings/settings_data
+  - features/settings/settings_presentation
+  - features/notifications/notifications_domain
+  - features/notifications/notifications_data
+  - shared/ui_kit
+  - shared/app_localization
+  - shared/home_widget_bridge
+
+melos:
+  command:
+    bootstrap:
+      usePubspecOverrides: true
+
+  scripts:
+    analyze:
+      exec:
+        command: dart analyze --fatal-infos .
+        concurrency: 4
+      description: Run static analysis in every package.
+
+    test:
+      exec:
+        command: dart test --coverage=coverage 2>/dev/null || flutter test --coverage
+        concurrency: 1
+      description: Run tests (with coverage) in every package.
+
+    format:
+      exec:
+        command: dart format --set-exit-if-changed .
+        concurrency: 4
+      description: Check formatting in every package.
