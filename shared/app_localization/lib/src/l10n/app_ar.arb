@@ -1,0 +1,206 @@
+{
+  "@@locale": "ar",
+  "appTitle": "درجة حرارة الغرفة",
+  "@appTitle": {
+    "description": "The application's title."
+  },
+  "login": "تسجيل الدخول",
+  "@login": {
+    "description": "Label for the login action/button."
+  },
+  "signUp": "إنشاء حساب",
+  "@signUp": {
+    "description": "Label for the sign up action/button."
+  },
+  "logout": "تسجيل الخروج",
+  "@logout": {
+    "description": "Label for the logout action/button."
+  },
+  "email": "البريد الإلكتروني",
+  "@email": {
+    "description": "Label for the email field."
+  },
+  "password": "كلمة المرور",
+  "@password": {
+    "description": "Label for the password field."
+  },
+  "confirmPassword": "تأكيد كلمة المرور",
+  "@confirmPassword": {
+    "description": "Label for the confirm password field."
+  },
+  "forgotPassword": "نسيت كلمة المرور؟",
+  "@forgotPassword": {
+    "description": "Label for the forgot password link."
+  },
+  "resetPassword": "إعادة تعيين كلمة المرور",
+  "@resetPassword": {
+    "description": "Title/label for the reset password screen or action."
+  },
+  "welcomeBack": "مرحبًا بعودتك",
+  "@welcomeBack": {
+    "description": "Greeting shown on the login screen."
+  },
+  "createAccount": "إنشاء حساب جديد",
+  "@createAccount": {
+    "description": "Title/label for the create account screen or action."
+  },
+  "dontHaveAccount": "ليس لديك حساب؟",
+  "@dontHaveAccount": {
+    "description": "Prompt shown on the login screen linking to sign up."
+  },
+  "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
+  "@alreadyHaveAccount": {
+    "description": "Prompt shown on the sign up screen linking to login."
+  },
+  "sendResetLink": "إرسال رابط إعادة التعيين",
+  "@sendResetLink": {
+    "description": "Label for the button that sends a password reset link."
+  },
+  "checkYourEmail": "تحقق من بريدك الإلكتروني",
+  "@checkYourEmail": {
+    "description": "Message shown after a password reset link has been sent."
+  },
+  "dashboard": "لوحة التحكم",
+  "@dashboard": {
+    "description": "Title for the main dashboard screen."
+  },
+  "roomTemperature": "درجة حرارة الغرفة",
+  "@roomTemperature": {
+    "description": "Label for the room (indoor) temperature reading."
+  },
+  "outsideTemperature": "درجة الحرارة الخارجية",
+  "@outsideTemperature": {
+    "description": "Label for the outside temperature reading."
+  },
+  "estimated": "مُقدَّرة",
+  "@estimated": {
+    "description": "Badge label indicating a reading is estimated, not measured."
+  },
+  "sensor": "مستشعر",
+  "@sensor": {
+    "description": "Badge label indicating a reading came from a sensor."
+  },
+  "lastUpdated": "آخر تحديث",
+  "@lastUpdated": {
+    "description": "Label preceding the timestamp of the last update."
+  },
+  "pullToRefresh": "اسحب للتحديث",
+  "@pullToRefresh": {
+    "description": "Hint shown to invite the user to pull-to-refresh."
+  },
+  "history": "السجل",
+  "@history": {
+    "description": "Title for the temperature history screen."
+  },
+  "dailyAverage": "المعدل اليومي",
+  "@dailyAverage": {
+    "description": "Label for a daily average temperature value."
+  },
+  "noHistoryYet": "لا يوجد سجل حتى الآن",
+  "@noHistoryYet": {
+    "description": "Empty state message for the history screen."
+  },
+  "settings": "الإعدادات",
+  "@settings": {
+    "description": "Title for the settings screen."
+  },
+  "thresholds": "الحدود",
+  "@thresholds": {
+    "description": "Title/label for the temperature thresholds section."
+  },
+  "minTemperature": "الحد الأدنى لدرجة الحرارة",
+  "@minTemperature": {
+    "description": "Label for the minimum temperature threshold field."
+  },
+  "maxTemperature": "الحد الأعلى لدرجة الحرارة",
+  "@maxTemperature": {
+    "description": "Label for the maximum temperature threshold field."
+  },
+  "enableAlerts": "تفعيل التنبيهات",
+  "@enableAlerts": {
+    "description": "Label for the toggle that enables threshold alerts."
+  },
+  "units": "وحدة القياس",
+  "@units": {
+    "description": "Label for the temperature unit setting."
+  },
+  "celsius": "درجة سيلسيوس",
+  "@celsius": {
+    "description": "Label for the Celsius temperature unit."
+  },
+  "fahrenheit": "درجة فهرنهايت",
+  "@fahrenheit": {
+    "description": "Label for the Fahrenheit temperature unit."
+  },
+  "indoorOffset": "معايرة درجة الحرارة الداخلية",
+  "@indoorOffset": {
+    "description": "Label for the indoor temperature calibration offset setting."
+  },
+  "indoorOffsetHint": "تُستخدم هذه القيمة لمعايرة تقدير درجة حرارة الغرفة بشكل أدق.",
+  "@indoorOffsetHint": {
+    "description": "Explanatory hint for the indoor offset setting."
+  },
+  "save": "حفظ",
+  "@save": {
+    "description": "Label for a save action/button."
+  },
+  "cancel": "إلغاء",
+  "@cancel": {
+    "description": "Label for a cancel action/button."
+  },
+  "retry": "إعادة المحاولة",
+  "@retry": {
+    "description": "Label for a retry action/button."
+  },
+  "errorGeneric": "حدث خطأ ما. حاول مرة أخرى.",
+  "@errorGeneric": {
+    "description": "Generic error message shown when no more specific message applies."
+  },
+  "errorNetwork": "تعذر الاتصال بالشبكة. تحقق من اتصالك بالإنترنت.",
+  "@errorNetwork": {
+    "description": "Error message shown when a network request fails."
+  },
+  "errorInvalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+  "@errorInvalidCredentials": {
+    "description": "Error message shown when login credentials are invalid."
+  },
+  "errorWeakPassword": "كلمة المرور ضعيفة جدًا. اختر كلمة مرور أقوى.",
+  "@errorWeakPassword": {
+    "description": "Error message shown when a chosen password is too weak."
+  },
+  "errorEmailInUse": "هذا البريد الإلكتروني مستخدم بالفعل.",
+  "@errorEmailInUse": {
+    "description": "Error message shown when signing up with an email already in use."
+  },
+  "notifications": "الإشعارات",
+  "@notifications": {
+    "description": "Title for the notifications section/screen."
+  },
+  "thresholdExceededTitle": "تجاوز الحد المسموح",
+  "@thresholdExceededTitle": {
+    "description": "Title of the notification shown when a threshold is exceeded."
+  },
+  "thresholdExceededBody": "بلغت درجة الحرارة {temp}° وهي خارج النطاق المحدد.",
+  "@thresholdExceededBody": {
+    "description": "Body of the notification shown when a threshold is exceeded.",
+    "placeholders": {
+      "temp": {
+        "type": "double",
+        "format": "decimalPattern",
+        "example": "27.5"
+      }
+    }
+  },
+  "normal": "طبيعية",
+  "@normal": {
+    "description": "Status label indicating a reading is within normal range."
+  },
+  "aboveThreshold": "أعلى من الحد المسموح",
+  "@aboveThreshold": {
+    "description": "Status label indicating a reading is above the configured threshold."
+  },
+  "belowThreshold": "أقل من الحد المسموح",
+  "@belowThreshold": {
+    "description": "Status label indicating a reading is below the configured threshold."
+  }
+}

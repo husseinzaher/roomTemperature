@@ -20,10 +20,9 @@ coverage/
 # macOS
 .DS_Store
 
-# Firebase (generate locally via `flutterfire configure`; keep out of git by default)
-**/google-services.json
-**/GoogleService-Info.plist
-**/firebase_options.dart
+# Firebase client config is not secret (it only identifies which project the
+# app talks to) — placeholders are committed; `flutterfire configure`
+# overwrites them with your real project's values, safe to commit too.
 .firebase/
 firebase-debug.log
 

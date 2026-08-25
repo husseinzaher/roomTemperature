@@ -2,7 +2,13 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:bloc/bloc.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
+import 'package:notifications_data/notifications_data.dart';
+import 'package:room_temperature_app/app/app.dart';
+import 'package:room_temperature_app/firebase_options.dart';
+import 'package:room_temperature_app/services/notifications_background.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppBlocObserver extends BlocObserver {
   const AppBlocObserver();
@@ -20,14 +26,26 @@ class AppBlocObserver extends BlocObserver {
   }
 }
 
-Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
+Future<void> bootstrap() async {
   FlutterError.onError = (details) {
     log(details.exceptionAsString(), stackTrace: details.stack);
   };
 
   Bloc.observer = const AppBlocObserver();
 
-  // Add cross-flavor configuration here
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  runApp(await builder());
+  final notificationSender = FlutterLocalNotificationSender();
+  await notificationSender.initialize();
+
+  final sharedPreferences = await SharedPreferences.getInstance();
+
+  await registerThresholdMonitor();
+
+  runApp(
+    App(
+      sharedPreferences: sharedPreferences,
+      notificationSender: notificationSender,
+    ),
+  );
 }

@@ -9,10 +9,20 @@ environment:
   flutter: ^3.44.0
 
 dependencies:
+  app_localization:
+    path: ../../../shared/app_localization
+  equatable: ^2.0.7
   flutter:
     sdk: flutter
+  flutter_bloc: ^9.1.1
+  provider: ^6.1.5+1
+  settings_domain:
+    path: ../settings_domain
+  ui_kit:
+    path: ../../../shared/ui_kit
 
 dev_dependencies:
+  bloc_test: ^10.0.0
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.5
