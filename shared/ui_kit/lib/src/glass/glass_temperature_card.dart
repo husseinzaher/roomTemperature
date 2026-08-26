@@ -141,8 +141,15 @@ class _IconBubble extends StatelessWidget {
       height: 78,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0x1FFFFFFF),
-        border: Border.all(color: const Color(0x24FFFFFF)),
+        gradient: const RadialGradient(
+          center: Alignment(-0.3, -0.4),
+          radius: 1.05,
+          colors: [
+            Color(0x38FFFFFF),
+            Color(0x14FFFFFF),
+          ],
+        ),
+        border: Border.all(color: const Color(0x3DFFFFFF)),
       ),
       alignment: Alignment.center,
       child: child,

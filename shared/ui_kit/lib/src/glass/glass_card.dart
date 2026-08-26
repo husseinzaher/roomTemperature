@@ -56,9 +56,17 @@ class GlassCard extends StatelessWidget {
 
     Widget surface = DecoratedBox(
       decoration: BoxDecoration(
-        color: tint,
         borderRadius: borderRadius,
         border: border ? Border.all(color: GlassTokens.border) : null,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.lerp(tint, GlassTokens.shine, 0.35) ?? tint,
+            tint,
+          ],
+          stops: const [0, 0.22],
+        ),
       ),
       child: Padding(padding: padding, child: child),
     );
@@ -89,10 +97,12 @@ class GlassCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: borderRadius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: surface,
-        ),
+        child: blur > 0
+            ? BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                child: surface,
+              )
+            : surface,
       ),
     );
   }

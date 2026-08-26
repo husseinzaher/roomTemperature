@@ -37,6 +37,12 @@ abstract final class GlassTokens {
   /// Hairline border that catches the light along a glass edge.
   static const Color border = Color(0x2EFFFFFF);
 
+  /// A brighter edge used when a glass control is selected.
+  static const Color borderSelected = Color(0x8AFFFFFF);
+
+  /// Soft inner highlight along the top of a glass surface.
+  static const Color shine = Color(0x38FFFFFF);
+
   /// Primary text/icon color on glass.
   static const Color onGlass = Color(0xFFFFFFFF);
 

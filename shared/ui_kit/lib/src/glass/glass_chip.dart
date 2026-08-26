@@ -23,9 +23,9 @@ class GlassChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsetsDirectional.fromSTEB(10, 5, 12, 5),
       decoration: BoxDecoration(
-        color: const Color(0x24FFFFFF),
+        color: const Color(0x1FFFFFFF),
         borderRadius: BorderRadius.circular(GlassTokens.radiusPill),
-        border: Border.all(color: const Color(0x2EFFFFFF)),
+        border: Border.all(color: const Color(0x3DFFFFFF)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -89,8 +89,11 @@ class _NavDestination extends StatelessWidget {
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? const Color(0x2EFFFFFF) : Colors.transparent,
+            color: selected ? const Color(0x38FFFFFF) : Colors.transparent,
             borderRadius: BorderRadius.circular(GlassTokens.radiusPill),
+            border: selected
+                ? Border.all(color: const Color(0x3DFFFFFF))
+                : null,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

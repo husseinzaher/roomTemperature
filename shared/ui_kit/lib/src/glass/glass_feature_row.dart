@@ -53,8 +53,10 @@ class GlassFeatureRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Icon(
-            Icons.chevron_right,
+          Icon(
+            Directionality.of(context) == TextDirection.rtl
+                ? Icons.chevron_left
+                : Icons.chevron_right,
             size: 22,
             color: GlassTokens.onGlassMuted,
           ),

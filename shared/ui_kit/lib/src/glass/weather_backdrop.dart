@@ -82,6 +82,10 @@ class WeatherBackdrop extends StatelessWidget {
             decoration: BoxDecoration(gradient: _scrim),
             child: SizedBox.expand(),
           ),
+          const DecoratedBox(
+            decoration: BoxDecoration(gradient: _glow),
+            child: SizedBox.expand(),
+          ),
           child,
         ],
       ),
@@ -100,6 +104,17 @@ class WeatherBackdrop extends StatelessWidget {
       Color(0xA60B1014),
     ],
     stops: [0, 0.28, 0.7, 1],
+  );
+
+  /// A soft highlight in the upper sky so the gradient feels lit rather
+  /// than flat.
+  static const _glow = RadialGradient(
+    center: Alignment(0, -0.55),
+    radius: 1.15,
+    colors: [
+      Color(0x33FFFFFF),
+      Color(0x00000000),
+    ],
   );
 
   static LinearGradient _gradientFor(BackdropMood mood) {

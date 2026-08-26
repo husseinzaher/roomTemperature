@@ -64,7 +64,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      expect(find.byType(SegmentedButton<Units>), findsOneWidget);
+      expect(find.byType(GlassSegmentedToggle), findsOneWidget);
       expect(find.byType(SwitchListTile), findsOneWidget);
       expect(find.byType(RangeSlider), findsOneWidget);
       expect(find.byType(Slider), findsOneWidget);
@@ -79,7 +79,11 @@ void main() {
       await tester.drag(find.byType(ListView), const Offset(0, -600));
       await tester.pumpAndSettle();
 
-      expect(find.text('Indoor Temperature Source'), findsOneWidget);
+      expect(find.text('INDOOR TEMPERATURE SOURCE'), findsOneWidget);
+      expect(
+        find.byType(GlassSelectTile),
+        findsNWidgets(IndoorTemperaturePreference.values.length),
+      );
       expect(find.text('Automatic'), findsOneWidget);
       expect(find.text('Phone Ambient Sensor'), findsOneWidget);
       expect(find.text('Bluetooth Sensor'), findsOneWidget);
@@ -101,12 +105,8 @@ void main() {
       await tester.drag(find.byType(ListView), const Offset(0, -800));
       await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.widgetWithText(
-          RadioListTile<IndoorTemperaturePreference>,
-          'Battery Temperature',
-        ),
-      );
+      await tester.ensureVisible(find.text('Battery Temperature'));
+      await tester.tap(find.text('Battery Temperature'));
       await tester.pumpAndSettle();
 
       expect(

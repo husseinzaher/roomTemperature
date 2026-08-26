@@ -206,9 +206,8 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
   }
 }
 
-/// Wraps the history and settings tabs — which are still conventional
-/// Material screens — so they get the app's dark ground and leave room for
-/// the floating nav bar.
+/// Wraps the history and settings tabs so they share the dashboard's
+/// cinematic backdrop and leave room for the floating nav bar.
 class _TabScaffold extends StatelessWidget {
   const _TabScaffold({required this.child});
 

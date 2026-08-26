@@ -53,10 +53,13 @@ class WeatherTopBar extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         _RefreshAction(onTap: onRefresh, isRefreshing: isRefreshing),
-        const SizedBox(width: 6),
-        _BarAction(icon: Icons.settings_outlined, onTap: onOpenSettings),
+        const SizedBox(width: 8),
+        GlassIconButton(
+          icon: Icons.settings_outlined,
+          onTap: onOpenSettings,
+        ),
       ],
     );
   }
@@ -107,30 +110,7 @@ class _RefreshActionState extends State<_RefreshAction>
   Widget build(BuildContext context) {
     return RotationTransition(
       turns: _controller,
-      child: _BarAction(icon: Icons.refresh, onTap: widget.onTap),
-    );
-  }
-}
-
-class _BarAction extends StatelessWidget {
-  const _BarAction({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(9),
-          child: Icon(icon, size: 29, color: GlassTokens.onGlass),
-        ),
-      ),
+      child: GlassIconButton(icon: Icons.refresh, onTap: widget.onTap),
     );
   }
 }

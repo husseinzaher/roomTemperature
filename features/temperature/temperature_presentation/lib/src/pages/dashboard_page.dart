@@ -286,25 +286,44 @@ class _Content extends StatelessWidget {
     unawaited(
       showDialog<void>(
         context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: const Color(0xF2151B20),
-          title: Text(
-            title,
-            style: const TextStyle(color: GlassTokens.onGlass),
-          ),
-          content: Text(
-            body,
-            style: const TextStyle(
-              color: GlassTokens.onGlassMuted,
-              height: 1.5,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: GlassCard(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: GlassTokens.onGlass,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  body,
+                  style: const TextStyle(
+                    color: GlassTokens.onGlassMuted,
+                    height: 1.5,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(
+                      closeLabel,
+                      style: const TextStyle(color: GlassTokens.onGlass),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(closeLabel),
-            ),
-          ],
         ),
       ),
     );
