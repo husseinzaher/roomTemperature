@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:history_data/history_data.dart';
 import 'package:history_domain/history_domain.dart';
 import 'package:home_widget_bridge/home_widget_bridge.dart';
+import 'package:local_database/local_database.dart';
 import 'package:notifications_data/notifications_data.dart';
 import 'package:notifications_domain/notifications_domain.dart';
 import 'package:provider/provider.dart';
@@ -14,7 +15,6 @@ import 'package:room_temperature_app/services/indoor_temperature_service.dart';
 import 'package:room_temperature_app/services/location_service.dart';
 import 'package:settings_data/settings_data.dart';
 import 'package:settings_domain/settings_domain.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:temperature_data/temperature_data.dart';
 import 'package:temperature_domain/temperature_domain.dart';
 import 'package:ui_kit/ui_kit.dart';
@@ -24,18 +24,18 @@ import 'package:ui_kit/ui_kit.dart';
 class App extends StatelessWidget {
   /// Creates the [App] root widget.
   ///
-  /// [sharedPreferences] and [notificationSender] are created up front in
-  /// `bootstrap()` (the former needs an async factory, the latter needs
-  /// its Android notification channel created before first use).
+  /// [database] and [notificationSender] are created up front in
+  /// `bootstrap()` (the former opens the SQLite file in the app's documents
+  /// directory, the latter needs its Android notification channel created
+  /// before first use).
   const App({
-    required this.sharedPreferences,
+    required this.database,
     required this.notificationSender,
     super.key,
   });
 
-  /// A pre-initialized [SharedPreferences] instance, used to cache
-  /// settings for instant offline reads.
-  final SharedPreferences sharedPreferences;
+  /// The single on-device database backing every repository below.
+  final AppDatabase database;
 
   /// A pre-initialized local-notification sender.
   final FlutterLocalNotificationSender notificationSender;
@@ -43,15 +43,11 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final weatherRepository = OpenMeteoWeatherRepository(OpenMeteoClient());
-    final temperatureRepository = LocalTemperatureRepository(
-      sharedPreferences: sharedPreferences,
+    final temperatureRepository = DriftTemperatureRepository(
+      database: database,
     );
-    final historyRepository = LocalHistoryRepository(
-      sharedPreferences: sharedPreferences,
-    );
-    final settingsRepository = LocalSettingsRepository(
-      sharedPreferences: sharedPreferences,
-    );
+    final historyRepository = DriftHistoryRepository(database: database);
+    final settingsRepository = DriftSettingsRepository(database: database);
     const ambientSensorService = AmbientSensorService();
     const batteryTemperatureService = BatteryTemperatureService();
     final indoorTemperatureService = IndoorTemperatureService(
@@ -71,11 +67,12 @@ class App extends StatelessWidget {
 
     return MultiProvider(
       providers: [
+        Provider<AppDatabase>.value(value: database),
         Provider<ITemperatureRepository>.value(value: temperatureRepository),
         Provider<IWeatherRepository>.value(value: weatherRepository),
         Provider<IHistoryRepository>.value(value: historyRepository),
         Provider<ISettingsRepository>.value(value: settingsRepository),
-        Provider<LocalSettingsRepository>.value(value: settingsRepository),
+        Provider<DriftSettingsRepository>.value(value: settingsRepository),
         Provider<INotificationSender>.value(value: notificationSender),
         Provider<HomeWidgetBridge>.value(value: const HomeWidgetBridge()),
         Provider<LocationService>.value(value: const LocationService()),
@@ -108,7 +105,7 @@ class _AppViewState extends State<_AppView> {
   void initState() {
     super.initState();
     _router = GoRouter(
-      initialLocation: const HomeRoute().location,
+      initialLocation: const SplashRoute().location,
       routes: $appRoutes,
     );
   }

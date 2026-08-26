@@ -6,8 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:history_domain/history_domain.dart';
 import 'package:history_presentation/history_presentation.dart';
 import 'package:home_widget_bridge/home_widget_bridge.dart';
+import 'package:room_temperature_app/home/home_widget_labels.dart';
 import 'package:room_temperature_app/services/indoor_temperature_service.dart';
-import 'package:room_temperature_app/services/local_user.dart';
 import 'package:room_temperature_app/services/location_service.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:settings_presentation/settings_presentation.dart';
@@ -17,8 +17,7 @@ import 'package:ui_kit/ui_kit.dart';
 
 /// The local-only app shell: the dashboard, history, and settings tabs behind
 /// a floating glass navigation bar, wiring the settings, temperature,
-/// history, and (headless) notification-threshold features together for the
-/// current user.
+/// history, and (headless) notification-threshold features together.
 class HomeShellPage extends StatelessWidget {
   /// Creates a [HomeShellPage].
   const HomeShellPage({super.key});
@@ -26,24 +25,20 @@ class HomeShellPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SettingsModule(
-      userId: localUserId,
       settingsRepository: context.read<ISettingsRepository>(),
-      child: const _TemperatureAndHistoryScope(userId: localUserId),
+      child: const _TemperatureAndHistoryScope(),
     );
   }
 }
 
 class _TemperatureAndHistoryScope extends StatelessWidget {
-  const _TemperatureAndHistoryScope({required this.userId});
-
-  final String userId;
+  const _TemperatureAndHistoryScope();
 
   @override
   Widget build(BuildContext context) {
     final settingsCubit = context.read<SettingsCubit>();
 
     return TemperatureModule(
-      userId: userId,
       temperatureRepository: context.read<ITemperatureRepository>(),
       weatherRepository: context.read<IWeatherRepository>(),
       estimator: const RoomTemperatureEstimator(),
@@ -60,7 +55,6 @@ class _TemperatureAndHistoryScope extends StatelessWidget {
         );
       },
       child: HistoryModule(
-        userId: userId,
         historyRepository: context.read<IHistoryRepository>(),
         child: const _HomeTabsView(),
       ),
@@ -194,13 +188,21 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
         (reading.roomTemperatureCelsius < threshold.minCelsius ||
             reading.roomTemperatureCelsius > threshold.maxCelsius);
 
+    final units =
+        context.read<SettingsCubit>().state.settings?.units ?? Units.celsius;
+
     unawaited(
       context.read<HomeWidgetBridge>().updateReading(
-        roomTemperatureCelsius: reading.roomTemperatureCelsius,
-        outsideTemperatureCelsius: reading.outsideTemperatureCelsius,
-        isEstimatedRoomTemperature: reading.isEstimated,
-        thresholdBreached: breached,
-        updatedAt: reading.timestamp,
+        HomeWidgetSnapshot.fromCelsius(
+          roomTemperatureCelsius: reading.roomTemperatureCelsius,
+          outsideTemperatureCelsius: reading.outsideTemperatureCelsius,
+          convertFromCelsius: units.fromCelsius,
+          unitSymbol: units.symbol,
+          sourceLabel: homeWidgetSourceLabel(reading.roomTemperatureSource),
+          thresholdBreached: breached,
+          updatedAt: reading.timestamp,
+          locationLabel: state.weather?.placeName,
+        ),
       ),
     );
   }

@@ -29,6 +29,15 @@ class OpenMeteoClient {
   final http.Client _httpClient;
 
   static const String _baseUrl = 'https://api.open-meteo.com/v1/forecast';
+  static const String _reverseGeocodeUrl =
+      'https://nominatim.openstreetmap.org/reverse';
+
+  /// Nominatim requires an identifying User-Agent; the default Dart client
+  /// header is rejected.
+  static const Map<String, String> _nominatimHeaders = {
+    'User-Agent': 'RoomTemperature/1.0 (com.comma.room_temperature)',
+    'Accept-Language': 'en',
+  };
 
   static const String _currentFields =
       'temperature_2m,apparent_temperature,relative_humidity_2m,'
@@ -72,6 +81,7 @@ class OpenMeteoClient {
       );
     }
 
+    final OutsideWeather parsed;
     try {
       final decoded = jsonDecode(response.body) as Map<String, dynamic>;
       final current = decoded['current'] as Map<String, dynamic>;
@@ -94,7 +104,7 @@ class OpenMeteoClient {
         throw const FormatException('is_day is missing or not a number');
       }
 
-      return OutsideWeather(
+      parsed = OutsideWeather(
         temperatureCelsius: temperature,
         condition: WeatherCondition.fromWmoCode(weatherCode),
         isDay: isDay == 1,
@@ -110,6 +120,78 @@ class OpenMeteoClient {
         'Failed to parse Open-Meteo response: $error',
       );
     }
+
+    return OutsideWeather(
+      temperatureCelsius: parsed.temperatureCelsius,
+      condition: parsed.condition,
+      isDay: parsed.isDay,
+      apparentTemperatureCelsius: parsed.apparentTemperatureCelsius,
+      relativeHumidityPercent: parsed.relativeHumidityPercent,
+      windSpeedKph: parsed.windSpeedKph,
+      surfacePressureHpa: parsed.surfacePressureHpa,
+      uvIndex: parsed.uvIndex,
+      sunset: parsed.sunset,
+      placeName: await _lookupPlaceName(latitude, longitude),
+    );
+  }
+
+  /// Best-effort reverse-geocode of ([latitude], [longitude]).
+  ///
+  /// Open-Meteo has no reverse-geocoding API, so this uses Nominatim.
+  /// A missing or unreadable place name must never fail the weather fetch:
+  /// the dashboard simply omits the location row.
+  Future<String?> _lookupPlaceName(double latitude, double longitude) async {
+    try {
+      final uri = Uri.parse(
+        '$_reverseGeocodeUrl?lat=$latitude&lon=$longitude'
+        '&format=jsonv2&zoom=10&addressdetails=1',
+      );
+      final response = await _httpClient.get(
+        uri,
+        headers: _nominatimHeaders,
+      );
+      if (response.statusCode != 200) {
+        return null;
+      }
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        return null;
+      }
+      return placeNameFromNominatim(decoded);
+    } on Object {
+      return null;
+    }
+  }
+
+  /// Picks a locality from a Nominatim reverse-geocoding payload.
+  ///
+  /// Prefers city/town/village over the longer `display_name` so the
+  /// dashboard and widgets can show a short pin label like `Sandub`.
+  static String? placeNameFromNominatim(Map<String, dynamic> decoded) {
+    const localityKeys = [
+      'city',
+      'town',
+      'village',
+      'municipality',
+      'suburb',
+      'hamlet',
+      'county',
+      'state',
+    ];
+    final address = decoded['address'];
+    if (address is Map) {
+      for (final key in localityKeys) {
+        final value = address[key];
+        if (value is String && value.trim().isNotEmpty) {
+          return value.trim();
+        }
+      }
+    }
+    final name = decoded['name'];
+    if (name is String && name.trim().isNotEmpty) {
+      return name.trim();
+    }
+    return null;
   }
 
   /// Returns [value] as a `Map` if it is one, and `null` otherwise.

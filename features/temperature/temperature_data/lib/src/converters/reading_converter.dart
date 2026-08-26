@@ -1,48 +1,35 @@
+import 'package:local_database/local_database.dart';
 import 'package:temperature_domain/temperature_domain.dart';
 
 /// {@template reading_converter}
-/// Converts between the domain [Reading] model and the local JSON map shape.
+/// Converts a Drift [ReadingRow] into the domain [Reading] model.
+///
+/// This is the boundary that keeps the generated Drift row types inside this
+/// package: nothing above the data layer ever sees a [ReadingRow].
 /// {@endtemplate}
 class ReadingConverter {
   /// {@macro reading_converter}
   const ReadingConverter();
 
-  /// Converts a raw local [data] map to a domain [Reading].
-  Reading fromMap(Map<String, dynamic> data) {
+  /// Converts a stored [row] into a domain [Reading].
+  ///
+  /// Throws a [FormatException] when the stored source name matches no
+  /// [RoomTemperatureSource] value — a row written by a newer build of the
+  /// app is a bug worth surfacing, not something to silently coerce.
+  Reading fromRow(ReadingRow row) {
     return Reading(
-      roomTemperatureCelsius: (data['roomTemperatureC'] as num).toDouble(),
-      roomTemperatureSource: _sourceFromString(
-        data['roomTemperatureSource'] as String,
-      ),
-      outsideTemperatureCelsius: (data['outsideTemperatureC'] as num)
-          .toDouble(),
-      timestamp: DateTime.parse(data['timestamp'] as String).toUtc(),
+      roomTemperatureCelsius: row.roomTemperatureC,
+      roomTemperatureSource: sourceFromName(row.roomTemperatureSource),
+      outsideTemperatureCelsius: row.outsideTemperatureC,
+      timestamp: row.recordedAt.toUtc(),
     );
   }
 
-  /// Converts a domain [Reading] to a local JSON map.
-  Map<String, dynamic> toMap(Reading reading) => {
-    'roomTemperatureC': reading.roomTemperatureCelsius,
-    'roomTemperatureSource': _sourceToString(reading.roomTemperatureSource),
-    'outsideTemperatureC': reading.outsideTemperatureCelsius,
-    'timestamp': reading.timestamp.toUtc().toIso8601String(),
-  };
-
-  RoomTemperatureSource _sourceFromString(String value) => switch (value) {
-    'ambientSensor' => RoomTemperatureSource.ambientSensor,
-    'sensor' => RoomTemperatureSource.ambientSensor,
-    'bluetoothSensor' => RoomTemperatureSource.bluetoothSensor,
-    'batteryTemperature' => RoomTemperatureSource.batteryTemperature,
-    'manual' => RoomTemperatureSource.manual,
-    'estimated' => RoomTemperatureSource.estimated,
-    _ => throw FormatException('Unknown roomTemperatureSource: $value'),
-  };
-
-  String _sourceToString(RoomTemperatureSource source) => switch (source) {
-    RoomTemperatureSource.ambientSensor => 'ambientSensor',
-    RoomTemperatureSource.bluetoothSensor => 'bluetoothSensor',
-    RoomTemperatureSource.batteryTemperature => 'batteryTemperature',
-    RoomTemperatureSource.manual => 'manual',
-    RoomTemperatureSource.estimated => 'estimated',
-  };
+  /// Resolves the [RoomTemperatureSource] stored under [name].
+  RoomTemperatureSource sourceFromName(String name) {
+    for (final source in RoomTemperatureSource.values) {
+      if (source.name == name) return source;
+    }
+    throw FormatException('Unknown roomTemperatureSource: $name');
+  }
 }

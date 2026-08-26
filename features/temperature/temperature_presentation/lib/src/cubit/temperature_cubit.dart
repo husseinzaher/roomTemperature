@@ -5,7 +5,7 @@ import 'package:temperature_domain/temperature_domain.dart';
 import 'package:temperature_presentation/src/cubit/temperature_state.dart';
 
 /// {@template temperature_cubit}
-/// Loads, refreshes, and streams the latest [Reading] for a user.
+/// Loads, refreshes, and streams the latest [Reading].
 ///
 /// This cubit is deliberately ignorant of *how* the device location and the
 /// user's indoor offset are obtained — those are injected as closures
@@ -18,7 +18,6 @@ import 'package:temperature_presentation/src/cubit/temperature_state.dart';
 class TemperatureCubit extends Cubit<TemperatureState> {
   /// {@macro temperature_cubit}
   TemperatureCubit({
-    required this.userId,
     required ITemperatureRepository temperatureRepository,
     required this._weatherRepository,
     required this._estimator,
@@ -28,13 +27,11 @@ class TemperatureCubit extends Cubit<TemperatureState> {
     this._resolveIndoorTemperature,
   }) : _temperatureRepository = temperatureRepository,
        super(const TemperatureState.loading()) {
-    _subscription = temperatureRepository
-        .watchLatestReading(userId: userId)
-        .listen(_onReadingReceived, onError: _onWatchError);
+    _subscription = temperatureRepository.watchLatestReading().listen(
+      _onReadingReceived,
+      onError: _onWatchError,
+    );
   }
-
-  /// The id of the user this cubit tracks readings for.
-  final String userId;
 
   final ITemperatureRepository _temperatureRepository;
   final IWeatherRepository _weatherRepository;
@@ -136,10 +133,7 @@ class TemperatureCubit extends Cubit<TemperatureState> {
       emit(TemperatureState.loaded(reading: reading, weather: weather));
 
       try {
-        await _temperatureRepository.recordReading(
-          userId: userId,
-          reading: reading,
-        );
+        await _temperatureRepository.recordReading(reading: reading);
       } on Exception {
         // Deliberately swallowed — the reading is already on screen, and
         // the history feature surfaces its own persistence errors.

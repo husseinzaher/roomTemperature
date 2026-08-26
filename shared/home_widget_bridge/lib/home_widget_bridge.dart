@@ -2,3 +2,4 @@
 library;
 
 export 'src/home_widget_bridge.dart';
+export 'src/home_widget_snapshot.dart';

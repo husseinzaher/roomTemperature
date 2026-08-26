@@ -14,15 +14,13 @@ class RecordDailySampleCommand {
 
   final IHistoryRepository _historyRepository;
 
-  /// Records a new sample for [userId] on [day].
+  /// Records a new sample on [day].
   Future<void> execute({
-    required String userId,
     required DateTime day,
     required double roomTemperatureCelsius,
     required double outsideTemperatureCelsius,
   }) {
     return _historyRepository.recordSample(
-      userId: userId,
       day: day,
       roomTemperatureCelsius: roomTemperatureCelsius,
       outsideTemperatureCelsius: outsideTemperatureCelsius,

@@ -25,19 +25,13 @@ void main() {
         timestamp: DateTime(2026),
       );
       when(
-        () => temperatureRepository.recordReading(
-          userId: 'user-1',
-          reading: reading,
-        ),
+        () => temperatureRepository.recordReading(reading: reading),
       ).thenAnswer((_) async {});
 
-      await command.execute(userId: 'user-1', reading: reading);
+      await command.execute(reading: reading);
 
       verify(
-        () => temperatureRepository.recordReading(
-          userId: 'user-1',
-          reading: reading,
-        ),
+        () => temperatureRepository.recordReading(reading: reading),
       ).called(1);
     });
 
@@ -49,16 +43,10 @@ void main() {
         timestamp: DateTime(2026),
       );
       when(
-        () => temperatureRepository.recordReading(
-          userId: 'user-1',
-          reading: reading,
-        ),
+        () => temperatureRepository.recordReading(reading: reading),
       ).thenThrow(Exception('boom'));
 
-      expect(
-        () => command.execute(userId: 'user-1', reading: reading),
-        throwsException,
-      );
+      expect(() => command.execute(reading: reading), throwsException);
     });
   });
 }

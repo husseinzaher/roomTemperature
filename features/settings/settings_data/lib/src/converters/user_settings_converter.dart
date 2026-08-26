@@ -1,126 +1,123 @@
 import 'package:settings_domain/settings_domain.dart';
 
 /// {@template user_settings_converter}
-/// Converts between the domain [UserSettings] model and the plain
-/// `Map<String, dynamic>` shape stored in the local settings cache.
+/// Converts between the domain [UserSettings] model and the flat
+/// `Map<String, String>` of key/value rows it is stored as.
 ///
-/// The map produced by [toMap] contains exactly the fields owned by the
-/// settings feature — `units`, `thresholdMinC`, `thresholdMaxC`,
-/// `thresholdEnabled`, `indoorOffsetC`, `indoorTemperatureSource`,
-/// `manualIndoorTempC` — and nothing else.
+/// Every field is persisted as its own row under the keys exposed below, so
+/// adding a setting never needs a schema migration and a feature that owns
+/// its own key can write it without going through [UserSettings] at all.
 ///
-/// [fromMap] is deliberately tolerant of missing or malformed fields: a
-/// fresh or partial profile document must never crash the app, so any
-/// absent or unreadable field falls back to the corresponding field of
-/// [UserSettings.defaults].
+/// [fromMap] is deliberately tolerant of missing or malformed values: a
+/// fresh install, a partially written store, or a value left behind by an
+/// older build must never crash the app, so every unreadable field falls
+/// back to the corresponding field of [UserSettings.defaults] on its own.
 /// {@endtemplate}
 class UserSettingsConverter {
   /// {@macro user_settings_converter}
   const UserSettingsConverter();
 
-  /// The local cache field name for [UserSettings.units].
-  static const String unitsField = 'units';
+  /// The settings key for [UserSettings.units].
+  static const String unitsKey = 'units';
 
-  /// The local cache field name for
-  /// [ThresholdSettings.minCelsius].
-  static const String thresholdMinField = 'thresholdMinC';
+  /// The settings key for [ThresholdSettings.minCelsius].
+  static const String thresholdMinKey = 'thresholdMinC';
 
-  /// The local cache field name for
-  /// [ThresholdSettings.maxCelsius].
-  static const String thresholdMaxField = 'thresholdMaxC';
+  /// The settings key for [ThresholdSettings.maxCelsius].
+  static const String thresholdMaxKey = 'thresholdMaxC';
 
-  /// The local cache field name for [ThresholdSettings.enabled].
-  static const String thresholdEnabledField = 'thresholdEnabled';
+  /// The settings key for [ThresholdSettings.enabled].
+  static const String thresholdEnabledKey = 'thresholdEnabled';
 
-  /// The local cache field name for [UserSettings.indoorOffsetCelsius].
-  static const String indoorOffsetField = 'indoorOffsetC';
+  /// The settings key for [UserSettings.indoorOffsetCelsius].
+  static const String indoorOffsetKey = 'indoorOffsetC';
 
-  /// The local cache field name for the selected indoor-temperature source.
-  static const String indoorTemperaturePreferenceField =
+  /// The settings key for [UserSettings.indoorTemperaturePreference].
+  static const String indoorTemperaturePreferenceKey =
       'indoorTemperatureSource';
 
-  /// The local cache field name for the manual indoor temperature.
-  static const String manualIndoorTemperatureField = 'manualIndoorTempC';
-
-  /// Builds a [UserSettings] from a raw local [data] map.
+  /// The settings key for [UserSettings.manualIndoorTemperatureCelsius].
   ///
-  /// Any missing or malformed field falls back to the matching field of
+  /// An empty value means "no manual temperature entered".
+  static const String manualIndoorTemperatureKey = 'manualIndoorTempC';
+
+  /// Builds a [UserSettings] from the stored key/value [values].
+  ///
+  /// Any missing or malformed value falls back to the matching field of
   /// [UserSettings.defaults] instead of throwing.
-  UserSettings fromMap(Map<String, dynamic> data) {
+  UserSettings fromMap(Map<String, String> values) {
     final defaults = UserSettings.defaults();
 
     return UserSettings(
-      units: _unitsOrDefault(data[unitsField], defaults.units),
+      units: _enumOrDefault(
+        values[unitsKey],
+        Units.values,
+        defaults.units,
+      ),
       threshold: ThresholdSettings(
         minCelsius: _doubleOrDefault(
-          data[thresholdMinField],
+          values[thresholdMinKey],
           defaults.threshold.minCelsius,
         ),
         maxCelsius: _doubleOrDefault(
-          data[thresholdMaxField],
+          values[thresholdMaxKey],
           defaults.threshold.maxCelsius,
         ),
         enabled: _boolOrDefault(
-          data[thresholdEnabledField],
+          values[thresholdEnabledKey],
           defaults.threshold.enabled,
         ),
       ),
       indoorOffsetCelsius: _doubleOrDefault(
-        data[indoorOffsetField],
+        values[indoorOffsetKey],
         defaults.indoorOffsetCelsius,
       ),
-      indoorTemperaturePreference: _preferenceOrDefault(
-        data[indoorTemperaturePreferenceField],
+      indoorTemperaturePreference: _enumOrDefault(
+        values[indoorTemperaturePreferenceKey],
+        IndoorTemperaturePreference.values,
         defaults.indoorTemperaturePreference,
       ),
       manualIndoorTemperatureCelsius:
-          _nullableDouble(data[manualIndoorTemperatureField]) ??
+          _nullableDouble(values[manualIndoorTemperatureKey]) ??
           defaults.manualIndoorTemperatureCelsius,
     );
   }
 
-  /// Builds the exact local cache map for [settings].
-  Map<String, dynamic> toMap(UserSettings settings) => {
-    unitsField: settings.units.name,
-    thresholdMinField: settings.threshold.minCelsius,
-    thresholdMaxField: settings.threshold.maxCelsius,
-    thresholdEnabledField: settings.threshold.enabled,
-    indoorOffsetField: settings.indoorOffsetCelsius,
-    indoorTemperaturePreferenceField: settings.indoorTemperaturePreference.name,
-    manualIndoorTemperatureField: settings.manualIndoorTemperatureCelsius,
+  /// Builds the exact set of key/value rows that represent [settings].
+  Map<String, String> toMap(UserSettings settings) => {
+    unitsKey: settings.units.name,
+    thresholdMinKey: '${settings.threshold.minCelsius}',
+    thresholdMaxKey: '${settings.threshold.maxCelsius}',
+    thresholdEnabledKey: '${settings.threshold.enabled}',
+    indoorOffsetKey: '${settings.indoorOffsetCelsius}',
+    indoorTemperaturePreferenceKey: settings.indoorTemperaturePreference.name,
+    manualIndoorTemperatureKey:
+        settings.manualIndoorTemperatureCelsius?.toString() ?? '',
   };
 
-  Units _unitsOrDefault(Object? value, Units fallback) {
-    if (value is! String) return fallback;
-    for (final unit in Units.values) {
-      if (unit.name == value) return unit;
-    }
-    return fallback;
-  }
-
-  double _doubleOrDefault(Object? value, double fallback) {
-    if (value is num) return value.toDouble();
-    return fallback;
-  }
-
-  bool _boolOrDefault(Object? value, bool fallback) {
-    if (value is bool) return value;
-    return fallback;
-  }
-
-  IndoorTemperaturePreference _preferenceOrDefault(
-    Object? value,
-    IndoorTemperaturePreference fallback,
+  T _enumOrDefault<T extends Enum>(
+    String? value,
+    List<T> allValues,
+    T fallback,
   ) {
-    if (value is! String) return fallback;
-    for (final preference in IndoorTemperaturePreference.values) {
-      if (preference.name == value) return preference;
+    if (value == null) return fallback;
+    for (final candidate in allValues) {
+      if (candidate.name == value) return candidate;
     }
     return fallback;
   }
 
-  double? _nullableDouble(Object? value) {
-    if (value is num) return value.toDouble();
-    return null;
+  double _doubleOrDefault(String? value, double fallback) =>
+      _nullableDouble(value) ?? fallback;
+
+  bool _boolOrDefault(String? value, bool fallback) => switch (value) {
+    'true' => true,
+    'false' => false,
+    _ => fallback,
+  };
+
+  double? _nullableDouble(String? value) {
+    if (value == null) return null;
+    return double.tryParse(value);
   }
 }

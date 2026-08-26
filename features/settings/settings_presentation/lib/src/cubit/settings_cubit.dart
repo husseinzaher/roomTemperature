@@ -5,7 +5,7 @@ import 'package:settings_domain/settings_domain.dart';
 import 'package:settings_presentation/src/cubit/settings_state.dart';
 
 /// {@template settings_cubit}
-/// Loads, streams, and saves a user's [UserSettings].
+/// Loads, streams, and saves the stored [UserSettings].
 ///
 /// Subscribes to [ISettingsRepository.watchSettings] as soon as it is
 /// constructed. [save] applies the update optimistically (emitting a
@@ -16,18 +16,14 @@ import 'package:settings_presentation/src/cubit/settings_state.dart';
 /// {@endtemplate}
 class SettingsCubit extends Cubit<SettingsState> {
   /// {@macro settings_cubit}
-  SettingsCubit({
-    required this.userId,
-    required ISettingsRepository settingsRepository,
-  }) : _settingsRepository = settingsRepository,
-       super(const SettingsState.loading()) {
-    _subscription = settingsRepository
-        .watchSettings(userId: userId)
-        .listen(_onSettingsReceived, onError: _onWatchError);
+  SettingsCubit({required ISettingsRepository settingsRepository})
+    : _settingsRepository = settingsRepository,
+      super(const SettingsState.loading()) {
+    _subscription = settingsRepository.watchSettings().listen(
+      _onSettingsReceived,
+      onError: _onWatchError,
+    );
   }
-
-  /// The id of the user this cubit tracks settings for.
-  final String userId;
 
   final ISettingsRepository _settingsRepository;
 
@@ -55,10 +51,7 @@ class SettingsCubit extends Cubit<SettingsState> {
   Future<void> save(UserSettings updated) async {
     emit(SettingsState.saving(settings: updated));
     try {
-      await _settingsRepository.updateSettings(
-        userId: userId,
-        settings: updated,
-      );
+      await _settingsRepository.updateSettings(settings: updated);
     } on Exception catch (error) {
       emit(
         SettingsState.error(errorMessage: error.toString(), settings: updated),

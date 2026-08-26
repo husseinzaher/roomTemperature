@@ -5,23 +5,19 @@ import 'package:history_domain/history_domain.dart';
 import 'package:history_presentation/src/cubit/history_state.dart';
 
 /// {@template history_cubit}
-/// Subscribes to a user's [DailyAverage] history and streams loaded/error
-/// states as it changes.
+/// Subscribes to the stored [DailyAverage] history and streams
+/// loaded/error states as it changes.
 /// {@endtemplate}
 class HistoryCubit extends Cubit<HistoryState> {
   /// {@macro history_cubit}
   HistoryCubit({
-    required this.userId,
     required IHistoryRepository historyRepository,
     int days = 30,
   }) : super(const HistoryState.loading()) {
     _subscription = historyRepository
-        .watchHistory(userId: userId, days: days)
+        .watchHistory(days: days)
         .listen(_onHistoryReceived, onError: _onWatchError);
   }
-
-  /// The id of the user this cubit tracks history for.
-  final String userId;
 
   StreamSubscription<List<DailyAverage>>? _subscription;
 

@@ -22,6 +22,7 @@ class OutsideWeather extends Equatable {
     this.surfacePressureHpa,
     this.uvIndex,
     this.sunset,
+    this.placeName,
   });
 
   /// The real air temperature in Celsius.
@@ -53,6 +54,12 @@ class OutsideWeather extends Equatable {
   /// Today's sunset time, in the location's local time.
   final DateTime? sunset;
 
+  /// A human-readable place name for the coordinate, e.g. `Sandub`.
+  ///
+  /// Null when reverse-geocoding is unavailable or failed; the UI hides
+  /// the location row rather than showing a placeholder.
+  final String? placeName;
+
   @override
   List<Object?> get props => [
     temperatureCelsius,
@@ -64,5 +71,6 @@ class OutsideWeather extends Equatable {
     surfacePressureHpa,
     uvIndex,
     sunset,
+    placeName,
   ];
 }

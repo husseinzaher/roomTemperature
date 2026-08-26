@@ -11,6 +11,7 @@ import 'package:temperature_presentation/src/format/weather_format.dart';
 import 'package:temperature_presentation/src/widgets/backdrop_mood_mapper.dart';
 import 'package:temperature_presentation/src/widgets/weather_feature_menu.dart';
 import 'package:temperature_presentation/src/widgets/weather_icon.dart';
+import 'package:temperature_presentation/src/widgets/weather_location_label.dart';
 import 'package:temperature_presentation/src/widgets/weather_stats_grid.dart';
 import 'package:temperature_presentation/src/widgets/weather_top_bar.dart';
 import 'package:ui_kit/ui_kit.dart';
@@ -169,6 +170,11 @@ class _Content extends StatelessWidget {
               onRefresh: context.read<TemperatureCubit>().refresh,
               onOpenSettings: onOpenSettings,
             ),
+            if (weather?.placeName case final placeName?
+                when placeName.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              WeatherLocationLabel(placeName: placeName),
+            ],
             const SizedBox(height: 30),
             if (reading == null)
               _EmptyState(state: state, l10n: l10n)

@@ -2,8 +2,8 @@ import 'package:equatable/equatable.dart';
 
 /// {@template daily_average}
 /// The running daily average of room and outside temperatures for a single
-/// user on a single calendar day, computed from the periodic `Reading`s
-/// recorded by the temperature feature.
+/// calendar day, computed from the periodic `Reading`s recorded by the
+/// temperature feature.
 ///
 /// [day] is date-only (no time-of-day component) and is normalized to
 /// midnight UTC.
@@ -29,8 +29,8 @@ class DailyAverage extends Equatable {
   /// The number of samples that were folded into this average.
   final int sampleCount;
 
-  /// The ISO `yyyy-MM-dd` representation of [day], used as the Firestore
-  /// document id for this daily average downstream.
+  /// The ISO `yyyy-MM-dd` representation of [day], used as the stable
+  /// display and lookup key for this daily average downstream.
   String get isoDateKey =>
       '${day.year.toString().padLeft(4, '0')}-'
       '${day.month.toString().padLeft(2, '0')}-'

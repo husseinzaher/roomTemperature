@@ -57,4 +57,33 @@ void main() {
       expect(reading.isEstimated, isFalse);
     });
   });
+
+  group('OutsideWeather', () {
+    test('supports value equality including placeName', () {
+      const a = OutsideWeather(
+        temperatureCelsius: 36,
+        condition: WeatherCondition.clear,
+        isDay: true,
+        placeName: 'Sandub',
+      );
+      const b = OutsideWeather(
+        temperatureCelsius: 36,
+        condition: WeatherCondition.clear,
+        isDay: true,
+        placeName: 'Sandub',
+      );
+
+      expect(a, b);
+      expect(
+        a,
+        isNot(
+          const OutsideWeather(
+            temperatureCelsius: 36,
+            condition: WeatherCondition.clear,
+            isDay: true,
+          ),
+        ),
+      );
+    });
+  });
 }

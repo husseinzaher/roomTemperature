@@ -20,7 +20,6 @@ void main() {
       final day = DateTime(2026);
       when(
         () => historyRepository.recordSample(
-          userId: 'user-1',
           day: day,
           roomTemperatureCelsius: 22,
           outsideTemperatureCelsius: 18,
@@ -28,7 +27,6 @@ void main() {
       ).thenAnswer((_) async {});
 
       await command.execute(
-        userId: 'user-1',
         day: day,
         roomTemperatureCelsius: 22,
         outsideTemperatureCelsius: 18,
@@ -36,7 +34,6 @@ void main() {
 
       verify(
         () => historyRepository.recordSample(
-          userId: 'user-1',
           day: day,
           roomTemperatureCelsius: 22,
           outsideTemperatureCelsius: 18,
@@ -48,7 +45,6 @@ void main() {
       final day = DateTime(2026);
       when(
         () => historyRepository.recordSample(
-          userId: 'user-1',
           day: day,
           roomTemperatureCelsius: 22,
           outsideTemperatureCelsius: 18,
@@ -57,7 +53,6 @@ void main() {
 
       expect(
         () => command.execute(
-          userId: 'user-1',
           day: day,
           roomTemperatureCelsius: 22,
           outsideTemperatureCelsius: 18,

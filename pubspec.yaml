@@ -18,10 +18,13 @@ workspace:
   - features/settings/settings_domain
   - features/settings/settings_data
   - features/settings/settings_presentation
+  - features/indoor_temperature/indoor_temperature_domain
+  - features/indoor_temperature/indoor_temperature_data
   - features/notifications/notifications_domain
   - features/notifications/notifications_data
   - shared/ui_kit
   - shared/app_localization
+  - shared/local_database
   - shared/home_widget_bridge
 
 melos:

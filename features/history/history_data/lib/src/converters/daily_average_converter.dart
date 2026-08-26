@@ -1,65 +1,31 @@
 import 'package:history_domain/history_domain.dart';
+import 'package:local_database/local_database.dart';
 
 /// {@template daily_average_converter}
-/// Converts between [DailyAverage] and the local running-sum map shape.
+/// Converts a Drift [DailyAverageRow] into the domain [DailyAverage] model.
+///
+/// The database stores running sums and a sample count rather than an
+/// average, so the two averages are computed here on read. This is also the
+/// boundary that keeps the generated Drift row types inside this package.
 /// {@endtemplate}
 class DailyAverageConverter {
   /// {@macro daily_average_converter}
   const DailyAverageConverter();
 
-  /// Converts a raw local [data] map (with document id
-  /// [docId]) to a domain [DailyAverage], computing both averages from the
-  /// stored sums and sample count.
-  DailyAverage fromMap(String docId, Map<String, dynamic> data) {
-    final sumRoomTempC = (data['sumRoomTempC'] as num).toDouble();
-    final sumOutsideTempC = (data['sumOutsideTempC'] as num).toDouble();
-    final sampleCount = data['sampleCount'] as int;
-
+  /// Converts a stored [row] into a domain [DailyAverage], deriving both
+  /// averages from the stored sums and sample count.
+  ///
+  /// A row with a [DailyAverageRow.sampleCount] of zero cannot exist — a row
+  /// is only ever created by folding in its first sample — so no
+  /// divide-by-zero guard is needed here.
+  DailyAverage fromRow(DailyAverageRow row) {
     return DailyAverage(
-      day: _dayFromDocId(docId),
-      averageRoomTemperatureCelsius: sumRoomTempC / sampleCount,
-      averageOutsideTemperatureCelsius: sumOutsideTempC / sampleCount,
-      sampleCount: sampleCount,
-    );
-  }
-
-  /// Returns the local running-sum map for a daily average.
-  Map<String, dynamic> toMap({
-    required double sumRoomTempC,
-    required double sumOutsideTempC,
-    required int sampleCount,
-  }) {
-    return {
-      'sumRoomTempC': sumRoomTempC,
-      'sumOutsideTempC': sumOutsideTempC,
-      'sampleCount': sampleCount,
-    };
-  }
-
-  /// Returns the updated local running-sum map for one new sample.
-  Map<String, dynamic> addSample({
-    required Map<String, dynamic>? current,
-    required double addRoomTempC,
-    required double addOutsideTempC,
-  }) {
-    final sumRoomTempC = (current?['sumRoomTempC'] as num?)?.toDouble() ?? 0;
-    final sumOutsideTempC =
-        (current?['sumOutsideTempC'] as num?)?.toDouble() ?? 0;
-    final sampleCount = current?['sampleCount'] as int? ?? 0;
-
-    return toMap(
-      sumRoomTempC: sumRoomTempC + addRoomTempC,
-      sumOutsideTempC: sumOutsideTempC + addOutsideTempC,
-      sampleCount: sampleCount + 1,
-    );
-  }
-
-  DateTime _dayFromDocId(String docId) {
-    final parts = docId.split('-');
-    return DateTime.utc(
-      int.parse(parts[0]),
-      int.parse(parts[1]),
-      int.parse(parts[2]),
+      // Rows are keyed by midnight UTC; `toUtc()` undoes the local-time view
+      // Drift hands back so the calendar day can never shift by a day.
+      day: row.day.toUtc(),
+      averageRoomTemperatureCelsius: row.sumRoomTempC / row.sampleCount,
+      averageOutsideTemperatureCelsius: row.sumOutsideTempC / row.sampleCount,
+      sampleCount: row.sampleCount,
     );
   }
 }

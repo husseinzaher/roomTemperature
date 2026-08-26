@@ -8,4 +8,3 @@ export 'src/models/notification_kind.dart';
 export 'src/models/threshold_breach.dart';
 export 'src/notifications_domain.dart';
 export 'src/repositories/i_notification_sender.dart';
-export 'src/repositories/i_notification_token_repository.dart';

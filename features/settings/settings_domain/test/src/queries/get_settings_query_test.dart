@@ -17,11 +17,11 @@ void main() {
     test('watch delegates to repository.watchSettings', () {
       final settings = UserSettings.defaults();
       when(
-        () => repository.watchSettings(userId: 'user-1'),
+        () => repository.watchSettings(),
       ).thenAnswer((_) => Stream.value(settings));
 
-      expect(query.watch(userId: 'user-1'), emits(settings));
-      verify(() => repository.watchSettings(userId: 'user-1')).called(1);
+      expect(query.watch(), emits(settings));
+      verify(() => repository.watchSettings()).called(1);
     });
   });
 }

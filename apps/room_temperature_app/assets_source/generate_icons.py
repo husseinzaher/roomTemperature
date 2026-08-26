@@ -27,6 +27,15 @@ FOREGROUND_SIZES = {
     "mipmap-xxxhdpi": 432,
 }
 
+# 160dp mark used on the Android launch screen.
+SPLASH_SIZES = {
+    "drawable-mdpi": 160,
+    "drawable-hdpi": 240,
+    "drawable-xhdpi": 320,
+    "drawable-xxhdpi": 480,
+    "drawable-xxxhdpi": 640,
+}
+
 FLAVORS = ["main", "development", "staging"]
 
 BACKGROUND_COLOR = (10, 22, 42, 255)  # deep night-sky blue sampled from art
@@ -143,7 +152,21 @@ def main():
             os.makedirs(os.path.dirname(playstore_path), exist_ok=True)
             make_playstore(src).save(playstore_path)
 
+        for drawable, size in SPLASH_SIZES.items():
+            out_dir = os.path.join(flavor_root, "res", drawable)
+            os.makedirs(out_dir, exist_ok=True)
+            src.resize((size, size), Image.LANCZOS).save(
+                os.path.join(out_dir, "splash_logo.png")
+            )
+
         print(f"done: {flavor}")
+
+    branding_dir = os.path.join(ROOT, "..", "assets", "branding")
+    os.makedirs(branding_dir, exist_ok=True)
+    src.resize((512, 512), Image.LANCZOS).save(
+        os.path.join(branding_dir, "app_logo.png")
+    )
+    print("done: flutter branding logo")
 
 
 if __name__ == "__main__":

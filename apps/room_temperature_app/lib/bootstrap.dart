@@ -3,10 +3,10 @@ import 'dart:developer';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/widgets.dart';
+import 'package:local_database/local_database.dart';
 import 'package:notifications_data/notifications_data.dart';
 import 'package:room_temperature_app/app/app.dart';
 import 'package:room_temperature_app/services/notifications_background.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AppBlocObserver extends BlocObserver {
   const AppBlocObserver();
@@ -36,14 +36,10 @@ Future<void> bootstrap() async {
   final notificationSender = FlutterLocalNotificationSender();
   await notificationSender.initialize();
 
-  final sharedPreferences = await SharedPreferences.getInstance();
+  // The single on-device database every repository reads and writes.
+  final database = AppDatabase();
 
   await registerThresholdMonitor();
 
-  runApp(
-    App(
-      sharedPreferences: sharedPreferences,
-      notificationSender: notificationSender,
-    ),
-  );
+  runApp(App(database: database, notificationSender: notificationSender));
 }

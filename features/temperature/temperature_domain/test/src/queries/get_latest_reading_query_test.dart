@@ -25,24 +25,18 @@ void main() {
         timestamp: DateTime(2026),
       );
       when(
-        () => temperatureRepository.watchLatestReading(userId: 'user-1'),
+        () => temperatureRepository.watchLatestReading(),
       ).thenAnswer((_) => Stream.value(reading));
 
-      expect(
-        query.watch(userId: 'user-1'),
-        emits(reading),
-      );
+      expect(query.watch(), emits(reading));
     });
 
     test('emits null when there is no reading yet', () {
       when(
-        () => temperatureRepository.watchLatestReading(userId: 'user-1'),
+        () => temperatureRepository.watchLatestReading(),
       ).thenAnswer((_) => Stream.value(null));
 
-      expect(
-        query.watch(userId: 'user-1'),
-        emits(null),
-      );
+      expect(query.watch(), emits(null));
     });
   });
 }

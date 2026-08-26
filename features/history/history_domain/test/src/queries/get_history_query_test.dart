@@ -24,24 +24,18 @@ void main() {
         ),
       ];
       when(
-        () => historyRepository.watchHistory(userId: 'user-1'),
+        () => historyRepository.watchHistory(),
       ).thenAnswer((_) => Stream.value(history));
 
-      expect(
-        query.watch(userId: 'user-1'),
-        emits(history),
-      );
+      expect(query.watch(), emits(history));
     });
 
     test('forwards a custom days value', () {
       when(
-        () => historyRepository.watchHistory(userId: 'user-1', days: 7),
+        () => historyRepository.watchHistory(days: 7),
       ).thenAnswer((_) => Stream.value(const <DailyAverage>[]));
 
-      expect(
-        query.watch(userId: 'user-1', days: 7),
-        emits(const <DailyAverage>[]),
-      );
+      expect(query.watch(days: 7), emits(const <DailyAverage>[]));
     });
   });
 }

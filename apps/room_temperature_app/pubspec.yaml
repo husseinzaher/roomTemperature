@@ -28,6 +28,8 @@ dependencies:
   home_widget_bridge:
     path: ../../shared/home_widget_bridge
   intl: ^0.20.2
+  local_database:
+    path: ../../shared/local_database
   notifications_data:
     path: ../../features/notifications/notifications_data
   notifications_domain:
@@ -69,3 +71,4 @@ flutter:
     # WeatherBackdrop falls back to a gradient per condition until real
     # photographs are dropped in. See the README for filenames.
     - assets/backgrounds/
+    - assets/branding/

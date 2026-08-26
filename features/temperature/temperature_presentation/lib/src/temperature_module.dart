@@ -15,7 +15,6 @@ import 'package:temperature_presentation/src/cubit/temperature_cubit.dart';
 class TemperatureModule extends StatelessWidget {
   /// {@macro temperature_module}
   const TemperatureModule({
-    required this.userId,
     required this.temperatureRepository,
     required this.weatherRepository,
     required this.estimator,
@@ -27,10 +26,7 @@ class TemperatureModule extends StatelessWidget {
     super.key,
   });
 
-  /// The id of the user this module tracks readings for.
-  final String userId;
-
-  /// Persists and streams the user's readings.
+  /// Persists and streams this device's readings.
   final ITemperatureRepository temperatureRepository;
 
   /// Fetches the real outside temperature.
@@ -62,7 +58,6 @@ class TemperatureModule extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => TemperatureCubit(
-        userId: userId,
         temperatureRepository: temperatureRepository,
         weatherRepository: weatherRepository,
         estimator: estimator,

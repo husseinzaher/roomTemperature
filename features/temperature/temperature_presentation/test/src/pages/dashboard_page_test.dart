@@ -55,17 +55,15 @@ void main() {
       weatherRepository = MockWeatherRepository();
 
       when(
-        () => temperatureRepository.watchLatestReading(userId: 'user-1'),
+        () => temperatureRepository.watchLatestReading(),
       ).thenAnswer((_) => Stream.value(reading));
       when(
         () => temperatureRepository.recordReading(
-          userId: any(named: 'userId'),
           reading: any(named: 'reading'),
         ),
       ).thenAnswer((_) async {});
 
       cubit = TemperatureCubit(
-        userId: 'user-1',
         temperatureRepository: temperatureRepository,
         weatherRepository: weatherRepository,
         estimator: const RoomTemperatureEstimator(),
@@ -243,6 +241,37 @@ void main() {
       expect(find.text('5-Day Forecast'), findsOneWidget);
       expect(find.text('Air Quality Meter'), findsOneWidget);
       expect(find.text('Weather Radar'), findsOneWidget);
+    });
+
+    testWidgets('shows the pin and locality when weather has a place name', (
+      tester,
+    ) async {
+      cubit.emit(
+        TemperatureState.loaded(
+          reading: reading,
+          weather: const OutsideWeather(
+            temperatureCelsius: 21,
+            condition: WeatherCondition.clear,
+            isDay: true,
+            placeName: 'Sandub',
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      expect(find.text('Sandub'), findsOneWidget);
+      expect(find.byIcon(Icons.location_on_outlined), findsOneWidget);
+    });
+
+    testWidgets('hides the location row when weather has no place name', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      expect(find.byIcon(Icons.location_on_outlined), findsNothing);
     });
   });
 }

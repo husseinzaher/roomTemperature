@@ -17,26 +17,21 @@ void main() {
     test('execute delegates to repository.updateSettings', () async {
       final settings = UserSettings.defaults();
       when(
-        () => repository.updateSettings(userId: 'user-1', settings: settings),
+        () => repository.updateSettings(settings: settings),
       ).thenAnswer((_) async {});
 
-      await command.execute(userId: 'user-1', settings: settings);
+      await command.execute(settings: settings);
 
-      verify(
-        () => repository.updateSettings(userId: 'user-1', settings: settings),
-      ).called(1);
+      verify(() => repository.updateSettings(settings: settings)).called(1);
     });
 
     test('execute propagates repository errors', () {
       final settings = UserSettings.defaults();
       when(
-        () => repository.updateSettings(userId: 'user-1', settings: settings),
+        () => repository.updateSettings(settings: settings),
       ).thenThrow(Exception('boom'));
 
-      expect(
-        () => command.execute(userId: 'user-1', settings: settings),
-        throwsException,
-      );
+      expect(() => command.execute(settings: settings), throwsException);
     });
   });
 }

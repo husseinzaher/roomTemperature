@@ -33,6 +33,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(Uri.parse('https://api.open-meteo.com'));
+      registerFallbackValue(<String, String>{});
     });
 
     setUp(() {
@@ -40,10 +41,36 @@ void main() {
       client = OpenMeteoClient(httpClient: httpClient);
     });
 
-    void stubResponse(String body, [int statusCode = 200]) {
+    void stubHttp({
+      required String forecastBody,
+      int forecastStatus = 200,
+      String nominatimBody = '{}',
+      int nominatimStatus = 200,
+      Exception? forecastThrow,
+      Exception? nominatimThrow,
+    }) {
+      Future<http.Response> respond(Invocation invocation) async {
+        final uri = invocation.positionalArguments.first as Uri;
+        if (uri.host.contains('nominatim')) {
+          if (nominatimThrow != null) {
+            throw nominatimThrow;
+          }
+          return http.Response(nominatimBody, nominatimStatus);
+        }
+        if (forecastThrow != null) {
+          throw forecastThrow;
+        }
+        return http.Response(forecastBody, forecastStatus);
+      }
+
+      when(() => httpClient.get(any())).thenAnswer(respond);
       when(
-        () => httpClient.get(any()),
-      ).thenAnswer((_) async => http.Response(body, statusCode));
+        () => httpClient.get(any(), headers: any(named: 'headers')),
+      ).thenAnswer(respond);
+    }
+
+    void stubResponse(String body, [int statusCode = 200]) {
+      stubHttp(forecastBody: body, forecastStatus: statusCode);
     }
 
     test('parses every field from a full successful response', () async {
@@ -63,6 +90,7 @@ void main() {
       expect(result.surfacePressureHpa, 1004.2);
       expect(result.uvIndex, 8.35);
       expect(result.sunset, DateTime(2026, 8, 26, 19, 26));
+      expect(result.placeName, isNull);
     });
 
     test('requests the expected Open-Meteo URL', () async {
@@ -71,7 +99,9 @@ void main() {
       await client.fetchCurrentWeather(latitude: 1, longitude: 2);
 
       final captured = verify(() => httpClient.get(captureAny())).captured;
-      final uri = captured.single as Uri;
+      final uri = captured.cast<Uri>().firstWhere(
+        (u) => u.path.contains('forecast'),
+      );
       expect(uri.origin, 'https://api.open-meteo.com');
       expect(uri.path, '/v1/forecast');
       expect(uri.queryParameters['latitude'], '1.0');
@@ -84,6 +114,69 @@ void main() {
       expect(uri.queryParameters['daily'], 'sunset,uv_index_max');
       expect(uri.queryParameters['timezone'], 'auto');
       expect(uri.queryParameters['forecast_days'], '1');
+    });
+
+    test(
+      'attaches the Nominatim locality when reverse geocoding succeeds',
+      () async {
+        stubHttp(
+          forecastBody: _fullBody(),
+          nominatimBody: jsonEncode({
+            'name': 'Sandub',
+            'address': {'village': 'Sandub', 'country': 'Qatar'},
+          }),
+        );
+
+        final result = await client.fetchCurrentWeather(
+          latitude: 25.276987,
+          longitude: 55.296249,
+        );
+
+        expect(result.placeName, 'Sandub');
+
+        final captured = verify(
+          () => httpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+        final uri = captured.cast<Uri>().firstWhere(
+          (u) => u.host.contains('nominatim'),
+        );
+        expect(uri.origin, 'https://nominatim.openstreetmap.org');
+        expect(uri.path, '/reverse');
+        expect(uri.queryParameters['lat'], '25.276987');
+        expect(uri.queryParameters['lon'], '55.296249');
+        expect(uri.queryParameters['format'], 'jsonv2');
+      },
+    );
+
+    test('still returns weather when reverse geocoding fails', () async {
+      stubHttp(
+        forecastBody: _fullBody(),
+        nominatimBody: 'server error',
+        nominatimStatus: 500,
+      );
+
+      final result = await client.fetchCurrentWeather(
+        latitude: 1,
+        longitude: 2,
+      );
+
+      expect(result.temperatureCelsius, 21.4);
+      expect(result.placeName, isNull);
+    });
+
+    test('still returns weather when reverse geocoding throws', () async {
+      stubHttp(
+        forecastBody: _fullBody(),
+        nominatimThrow: Exception('nominatim down'),
+      );
+
+      final result = await client.fetchCurrentWeather(
+        latitude: 1,
+        longitude: 2,
+      );
+
+      expect(result.temperatureCelsius, 21.4);
+      expect(result.placeName, isNull);
     });
 
     test('throws WeatherFetchException on a non-200 status', () async {
@@ -280,6 +373,38 @@ void main() {
           expect(result.condition, entry.value);
         });
       }
+    });
+  });
+
+  group('OpenMeteoClient.placeNameFromNominatim', () {
+    test('prefers village over the top-level name', () {
+      expect(
+        OpenMeteoClient.placeNameFromNominatim({
+          'name': 'Municipality of Doha',
+          'address': {'village': 'Sandub', 'country': 'Qatar'},
+        }),
+        'Sandub',
+      );
+    });
+
+    test('falls back to name when address has no locality', () {
+      expect(
+        OpenMeteoClient.placeNameFromNominatim({'name': 'Sandub'}),
+        'Sandub',
+      );
+    });
+
+    test('returns null for an empty payload', () {
+      expect(OpenMeteoClient.placeNameFromNominatim({}), isNull);
+    });
+
+    test('skips blank locality strings', () {
+      expect(
+        OpenMeteoClient.placeNameFromNominatim({
+          'address': {'city': '  ', 'town': 'Al Wakrah'},
+        }),
+        'Al Wakrah',
+      );
     });
   });
 }

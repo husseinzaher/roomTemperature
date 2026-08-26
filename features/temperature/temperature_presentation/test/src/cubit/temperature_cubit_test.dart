@@ -52,17 +52,15 @@ void main() {
       double indoorOffset = 2,
     }) {
       when(
-        () => temperatureRepository.watchLatestReading(userId: 'user-1'),
+        () => temperatureRepository.watchLatestReading(),
       ).thenAnswer((_) => watchStream ?? const Stream.empty());
       when(
         () => temperatureRepository.recordReading(
-          userId: any(named: 'userId'),
           reading: any(named: 'reading'),
         ),
       ).thenAnswer((_) async {});
 
       return TemperatureCubit(
-        userId: 'user-1',
         temperatureRepository: temperatureRepository,
         weatherRepository: weatherRepository,
         estimator: estimator,
@@ -123,7 +121,6 @@ void main() {
       verify: (_) {
         verify(
           () => temperatureRepository.recordReading(
-            userId: 'user-1',
             reading: any(
               named: 'reading',
               that: isA<Reading>().having(

@@ -9,7 +9,6 @@ class MockNotificationSender extends Mock implements INotificationSender {}
 
 void main() {
   group('ThresholdMonitor', () {
-    const userId = 'user-1';
     late INotificationSender sender;
     late EvaluateAndNotifyCommand evaluateAndNotify;
 
@@ -52,18 +51,18 @@ void main() {
 
       final monitor = ThresholdMonitor(
         evaluateAndNotify: evaluateAndNotify,
-        getLatestReading: (_) async => null,
-        getSettings: (_) async => settings,
-        getLastBreach: (_) async {
+        getLatestReading: () async => null,
+        getSettings: () async => settings,
+        getLastBreach: () async {
           getLastBreachCalled = true;
           return ThresholdBreach.none;
         },
-        setLastBreach: (_, _) async {
+        setLastBreach: (_) async {
           setLastBreachCalled = true;
         },
       );
 
-      await monitor.check(userId);
+      await monitor.check();
 
       expect(getLastBreachCalled, isFalse);
       expect(setLastBreachCalled, isFalse);
@@ -75,15 +74,15 @@ void main() {
 
       final monitor = ThresholdMonitor(
         evaluateAndNotify: evaluateAndNotify,
-        getLatestReading: (_) async => readingAt(31),
-        getSettings: (_) async => null,
-        getLastBreach: (_) async => ThresholdBreach.none,
-        setLastBreach: (_, _) async {
+        getLatestReading: () async => readingAt(31),
+        getSettings: () async => null,
+        getLastBreach: () async => ThresholdBreach.none,
+        setLastBreach: (_) async {
           setLastBreachCalled = true;
         },
       );
 
-      await monitor.check(userId);
+      await monitor.check();
 
       expect(setLastBreachCalled, isFalse);
       verifyNever(() => sender.send(any()));
@@ -92,23 +91,20 @@ void main() {
     test(
       'evaluates a breach, notifies, and persists the new breach state',
       () async {
-        String? persistedUserId;
         ThresholdBreach? persistedBreach;
 
         final monitor = ThresholdMonitor(
           evaluateAndNotify: evaluateAndNotify,
-          getLatestReading: (_) async => readingAt(31.2),
-          getSettings: (_) async => settings,
-          getLastBreach: (_) async => ThresholdBreach.none,
-          setLastBreach: (persistedForUserId, breach) async {
-            persistedUserId = persistedForUserId;
+          getLatestReading: () async => readingAt(31.2),
+          getSettings: () async => settings,
+          getLastBreach: () async => ThresholdBreach.none,
+          setLastBreach: (breach) async {
             persistedBreach = breach;
           },
         );
 
-        await monitor.check(userId);
+        await monitor.check();
 
-        expect(persistedUserId, userId);
         expect(persistedBreach, ThresholdBreach.aboveMaximum);
         verify(() => sender.send(any())).called(1);
       },
@@ -121,15 +117,15 @@ void main() {
 
         final monitor = ThresholdMonitor(
           evaluateAndNotify: evaluateAndNotify,
-          getLatestReading: (_) async => readingAt(31.2),
-          getSettings: (_) async => settings,
-          getLastBreach: (_) async => ThresholdBreach.aboveMaximum,
-          setLastBreach: (_, breach) async {
+          getLatestReading: () async => readingAt(31.2),
+          getSettings: () async => settings,
+          getLastBreach: () async => ThresholdBreach.aboveMaximum,
+          setLastBreach: (breach) async {
             persistedBreach = breach;
           },
         );
 
-        await monitor.check(userId);
+        await monitor.check();
 
         expect(persistedBreach, ThresholdBreach.aboveMaximum);
         verifyNever(() => sender.send(any()));

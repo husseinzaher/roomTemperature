@@ -34,7 +34,6 @@ class UserSettings extends Equatable {
       enabled: false,
     ),
     indoorOffsetCelsius: 0,
-    indoorTemperaturePreference: IndoorTemperaturePreference.automatic,
   );
 
   /// The user's preferred display unit.

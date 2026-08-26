@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="widget_room_label">Room</string>
+    <string name="widget_home_name">Room temperature</string>
+    <string name="widget_lock_name">Room temperature (lock)</string>
+    <string name="widget_room_label">Inside</string>
     <string name="widget_outside_label">Outside</string>
     <string name="widget_updated_at">Updated %1$s</string>
-    <string name="widget_description">Room &amp; outside temperature</string>
+    <string name="widget_description">Indoor and outdoor temperature on the home screen</string>
+    <string name="widget_lock_description">Compact indoor and outdoor temperature for the lock screen</string>
 </resources>

@@ -1,5 +1,5 @@
 name: home_widget_bridge
-description: Shared bridge to the Android home-screen widget
+description: Shared bridge to the Android home-screen and lock-screen widgets
 version: 0.1.0+1
 publish_to: none
 resolution: workspace

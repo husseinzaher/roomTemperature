@@ -123,7 +123,6 @@ class _HistoryBody extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
           child: GlassCard(
-            blur: 0,
             child: _HistoryChart(items: chronological),
           ),
         ),
