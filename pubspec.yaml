@@ -33,6 +33,13 @@ melos:
       usePubspecOverrides: true
 
   scripts:
+
+    run:dev:
+      exec: flutter run --flavor development -t lib/main_development.dart
+      packageFilters:
+        scope:
+          - room_temperature_app
+
     analyze:
       exec:
         command: dart analyze --fatal-infos .
