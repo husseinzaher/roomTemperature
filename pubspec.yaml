@@ -34,7 +34,7 @@ melos:
 
   scripts:
 
-    run:dev:
+    development:
       exec: flutter run --flavor development -t lib/main_development.dart
       packageFilters:
         scope:
