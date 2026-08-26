@@ -10,26 +10,38 @@ void main() {
     late OpenMeteoClient client;
     late OpenMeteoWeatherRepository repository;
 
+    final weather = OutsideWeather(
+      temperatureCelsius: 32.1,
+      condition: WeatherCondition.clear,
+      isDay: true,
+      apparentTemperatureCelsius: 36.4,
+      relativeHumidityPercent: 55,
+      windSpeedKph: 9.2,
+      surfacePressureHpa: 1001.3,
+      uvIndex: 7.1,
+      sunset: DateTime(2026, 8, 26, 19, 26),
+    );
+
     setUp(() {
       client = MockOpenMeteoClient();
       repository = OpenMeteoWeatherRepository(client);
     });
 
-    test('fetches the outside temperature for a location', () async {
+    test('fetches the outside weather for a location', () async {
       when(
-        () => client.fetchCurrentTemperatureCelsius(
+        () => client.fetchCurrentWeather(
           latitude: 25.276987,
           longitude: 55.296249,
         ),
-      ).thenAnswer((_) async => 32.1);
+      ).thenAnswer((_) async => weather);
 
-      final result = await repository.fetchOutsideTemperatureCelsius(
+      final result = await repository.fetchOutsideWeather(
         location: const Location(latitude: 25.276987, longitude: 55.296249),
       );
 
-      expect(result, 32.1);
+      expect(result, weather);
       verify(
-        () => client.fetchCurrentTemperatureCelsius(
+        () => client.fetchCurrentWeather(
           latitude: 25.276987,
           longitude: 55.296249,
         ),
@@ -38,14 +50,11 @@ void main() {
 
     test('propagates WeatherFetchException from the client', () async {
       when(
-        () => client.fetchCurrentTemperatureCelsius(
-          latitude: 1,
-          longitude: 2,
-        ),
+        () => client.fetchCurrentWeather(latitude: 1, longitude: 2),
       ).thenThrow(const WeatherFetchException('boom'));
 
       expect(
-        () => repository.fetchOutsideTemperatureCelsius(
+        () => repository.fetchOutsideWeather(
           location: const Location(latitude: 1, longitude: 2),
         ),
         throwsA(isA<WeatherFetchException>()),

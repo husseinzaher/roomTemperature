@@ -12,8 +12,8 @@ class OpenMeteoWeatherRepository implements IWeatherRepository {
   final OpenMeteoClient _client;
 
   @override
-  Future<double> fetchOutsideTemperatureCelsius({required Location location}) {
-    return _client.fetchCurrentTemperatureCelsius(
+  Future<OutsideWeather> fetchOutsideWeather({required Location location}) {
+    return _client.fetchCurrentWeather(
       latitude: location.latitude,
       longitude: location.longitude,
     );
