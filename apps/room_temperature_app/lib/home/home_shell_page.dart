@@ -190,6 +190,8 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
 
     final units =
         context.read<SettingsCubit>().state.settings?.units ?? Units.celsius;
+    final weather = state.weather;
+    final stats = homeWidgetStatLabels(weather: weather, units: units);
 
     unawaited(
       context.read<HomeWidgetBridge>().updateReading(
@@ -201,7 +203,21 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
           sourceLabel: homeWidgetSourceLabel(reading.roomTemperatureSource),
           thresholdBreached: breached,
           updatedAt: reading.timestamp,
-          locationLabel: state.weather?.placeName,
+          locationLabel: weather?.placeName,
+          dateLabel: homeWidgetDateLabel(reading.timestamp),
+          conditionLabel: weather == null
+              ? null
+              : homeWidgetConditionLabel(weather.condition),
+          conditionIcon: weather?.condition.name,
+          feelsLikeLabel: stats.feelsLike,
+          humidityLabel: stats.humidity,
+          windLabel: stats.wind,
+          uvLabel: stats.uv,
+          forecast: homeWidgetForecast(
+            weather: weather,
+            units: units,
+            now: reading.timestamp,
+          ),
         ),
       ),
     );

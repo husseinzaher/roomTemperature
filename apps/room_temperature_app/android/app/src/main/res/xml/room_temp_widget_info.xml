@@ -3,14 +3,14 @@
     android:description="@string/widget_description"
     android:initialKeyguardLayout="@layout/room_temp_lock_widget"
     android:initialLayout="@layout/room_temp_widget"
-    android:minWidth="180dp"
-    android:minHeight="110dp"
+    android:minWidth="250dp"
+    android:minHeight="220dp"
     android:minResizeWidth="110dp"
     android:minResizeHeight="40dp"
     android:previewLayout="@layout/room_temp_widget"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="4"
-    android:targetCellHeight="2"
+    android:targetCellHeight="4"
     android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen|keyguard">
 </appwidget-provider>

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:home_widget_bridge/src/home_widget_forecast_day.dart';
 import 'package:home_widget_bridge/src/home_widget_snapshot.dart';
 
 /// {@template home_widget_bridge}
@@ -24,6 +25,13 @@ class HomeWidgetBridge {
   static const String _updatedAtKey = 'updated_at_label';
   static const String _thresholdBreachedKey = 'threshold_breached';
   static const String _locationLabelKey = 'location_label';
+  static const String _dateLabelKey = 'date_label';
+  static const String _conditionLabelKey = 'condition_label';
+  static const String _conditionIconKey = 'condition_icon';
+  static const String _feelsLikeKey = 'feels_like_label';
+  static const String _humidityKey = 'humidity_label';
+  static const String _windKey = 'wind_label';
+  static const String _uvKey = 'uv_label';
   static const String _legacyRoomTempKey = 'room_temp_c';
   static const String _legacyOutsideTempKey = 'outside_temp_c';
 
@@ -61,6 +69,51 @@ class HomeWidgetBridge {
         _locationLabelKey,
         snapshot.locationLabel ?? '',
       );
+      await HomeWidget.saveWidgetData<String>(
+        _dateLabelKey,
+        snapshot.dateLabel ?? '',
+      );
+      await HomeWidget.saveWidgetData<String>(
+        _conditionLabelKey,
+        snapshot.conditionLabel ?? '',
+      );
+      await HomeWidget.saveWidgetData<String>(
+        _conditionIconKey,
+        snapshot.conditionIcon ?? '',
+      );
+      await HomeWidget.saveWidgetData<String>(
+        _feelsLikeKey,
+        snapshot.feelsLikeLabel ?? '',
+      );
+      await HomeWidget.saveWidgetData<String>(
+        _humidityKey,
+        snapshot.humidityLabel ?? '',
+      );
+      await HomeWidget.saveWidgetData<String>(
+        _windKey,
+        snapshot.windLabel ?? '',
+      );
+      await HomeWidget.saveWidgetData<String>(
+        _uvKey,
+        snapshot.uvLabel ?? '',
+      );
+      for (var i = 0; i < 4; i++) {
+        final day = i < snapshot.forecast.length
+            ? snapshot.forecast[i]
+            : HomeWidgetForecastDay.empty;
+        await HomeWidget.saveWidgetData<String>(
+          'forecast_${i}_label',
+          day.label,
+        );
+        await HomeWidget.saveWidgetData<String>(
+          'forecast_${i}_icon',
+          day.iconKey,
+        );
+        await HomeWidget.saveWidgetData<String>(
+          'forecast_${i}_range',
+          day.range,
+        );
+      }
       await HomeWidget.saveWidgetData<String>(
         _legacyRoomTempKey,
         snapshot.roomTemperature,

@@ -43,7 +43,8 @@ class OpenMeteoClient {
       'temperature_2m,apparent_temperature,relative_humidity_2m,'
       'wind_speed_10m,surface_pressure,weather_code,is_day';
 
-  static const String _dailyFields = 'sunset,uv_index_max';
+  static const String _dailyFields =
+      'sunset,uv_index_max,temperature_2m_max,temperature_2m_min,weather_code';
 
   /// Fetches the current outside weather at ([latitude], [longitude]).
   ///
@@ -65,7 +66,7 @@ class OpenMeteoClient {
       '&current=$_currentFields'
       '&daily=$_dailyFields'
       '&timezone=auto'
-      '&forecast_days=1',
+      '&forecast_days=4',
     );
 
     final http.Response response;
@@ -114,6 +115,7 @@ class OpenMeteoClient {
         surfacePressureHpa: _asDouble(current['surface_pressure']),
         uvIndex: _asDouble(_firstOfDaily(daily, 'uv_index_max')),
         sunset: _asDateTime(_firstOfDaily(daily, 'sunset')),
+        forecastDays: _parseDailyForecast(daily),
       );
     } catch (error) {
       throw WeatherFetchException(
@@ -132,6 +134,7 @@ class OpenMeteoClient {
       uvIndex: parsed.uvIndex,
       sunset: parsed.sunset,
       placeName: await _lookupPlaceName(latitude, longitude),
+      forecastDays: parsed.forecastDays,
     );
   }
 
@@ -200,15 +203,60 @@ class OpenMeteoClient {
 
   /// Reads the first element of the `daily` array named [key].
   ///
-  /// Because the request asks for `forecast_days=1`, every `daily` field comes
-  /// back as a single-element list. Returns `null` if [daily] is absent, the
-  /// field is missing, or the list is empty.
+  /// Daily fields come back as lists, one value per forecast day. Returns
+  /// `null` if [daily] is absent, the field is missing, or the list is empty.
   static Object? _firstOfDaily(Map<String, dynamic>? daily, String key) {
     final values = daily?[key];
     if (values is List && values.isNotEmpty) {
       return values.first;
     }
     return null;
+  }
+
+  /// Parses up to four [DailyForecast] days from an Open-Meteo `daily` map.
+  static List<DailyForecast> _parseDailyForecast(Map<String, dynamic>? daily) {
+    if (daily == null) {
+      return const [];
+    }
+    final times = daily['time'];
+    final maxes = daily['temperature_2m_max'];
+    final mins = daily['temperature_2m_min'];
+    final codes = daily['weather_code'];
+    if (times is! List || maxes is! List || mins is! List || codes is! List) {
+      return const [];
+    }
+    var count = times.length;
+    if (maxes.length < count) {
+      count = maxes.length;
+    }
+    if (mins.length < count) {
+      count = mins.length;
+    }
+    if (codes.length < count) {
+      count = codes.length;
+    }
+    if (count > 4) {
+      count = 4;
+    }
+    final days = <DailyForecast>[];
+    for (var i = 0; i < count; i++) {
+      final date = _asDateTime(times[i]);
+      final max = _asDouble(maxes[i]);
+      final min = _asDouble(mins[i]);
+      final code = _asInt(codes[i]);
+      if (date == null || max == null || min == null || code == null) {
+        continue;
+      }
+      days.add(
+        DailyForecast(
+          date: date,
+          condition: WeatherCondition.fromWmoCode(code),
+          maxCelsius: max,
+          minCelsius: min,
+        ),
+      );
+    }
+    return days;
   }
 
   /// Parses [value] as a `double`, tolerating both `int` and `double` JSON

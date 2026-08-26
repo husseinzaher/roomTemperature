@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:temperature_domain/src/models/daily_forecast.dart';
 import 'package:temperature_domain/src/models/weather_condition.dart';
 
 /// {@template outside_weather}
@@ -23,6 +24,7 @@ class OutsideWeather extends Equatable {
     this.uvIndex,
     this.sunset,
     this.placeName,
+    this.forecastDays = const [],
   });
 
   /// The real air temperature in Celsius.
@@ -60,6 +62,9 @@ class OutsideWeather extends Equatable {
   /// the location row rather than showing a placeholder.
   final String? placeName;
 
+  /// Up to four upcoming days of high/low forecast, starting today.
+  final List<DailyForecast> forecastDays;
+
   @override
   List<Object?> get props => [
     temperatureCelsius,
@@ -72,5 +77,6 @@ class OutsideWeather extends Equatable {
     uvIndex,
     sunset,
     placeName,
+    forecastDays,
   ];
 }

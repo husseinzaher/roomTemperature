@@ -4,7 +4,11 @@
     <string name="widget_lock_name">Room temperature (lock)</string>
     <string name="widget_room_label">Inside</string>
     <string name="widget_outside_label">Outside</string>
+    <string name="widget_feels_like">Feels</string>
+    <string name="widget_humidity">Humidity</string>
+    <string name="widget_wind">Wind</string>
+    <string name="widget_uv">UV</string>
     <string name="widget_updated_at">Updated %1$s</string>
-    <string name="widget_description">Indoor and outdoor temperature on the home screen</string>
+    <string name="widget_description">Indoor and outdoor weather, location, and a 4-day forecast</string>
     <string name="widget_lock_description">Compact indoor and outdoor temperature for the lock screen</string>
 </resources>

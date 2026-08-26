@@ -91,6 +91,7 @@ void main() {
       expect(result.uvIndex, 8.35);
       expect(result.sunset, DateTime(2026, 8, 26, 19, 26));
       expect(result.placeName, isNull);
+      expect(result.forecastDays, isEmpty);
     });
 
     test('requests the expected Open-Meteo URL', () async {
@@ -111,9 +112,13 @@ void main() {
         'temperature_2m,apparent_temperature,relative_humidity_2m,'
         'wind_speed_10m,surface_pressure,weather_code,is_day',
       );
-      expect(uri.queryParameters['daily'], 'sunset,uv_index_max');
+      expect(
+        uri.queryParameters['daily'],
+        'sunset,uv_index_max,temperature_2m_max,temperature_2m_min,'
+        'weather_code',
+      );
       expect(uri.queryParameters['timezone'], 'auto');
-      expect(uri.queryParameters['forecast_days'], '1');
+      expect(uri.queryParameters['forecast_days'], '4');
     });
 
     test(
@@ -347,6 +352,43 @@ void main() {
       );
 
       expect(result.isDay, isFalse);
+    });
+
+    test('parses a four-day high/low forecast from daily arrays', () async {
+      stubResponse(
+        jsonEncode({
+          'current': {
+            'temperature_2m': 36,
+            'weather_code': 45,
+            'is_day': 1,
+          },
+          'daily': {
+            'time': [
+              '2026-08-26',
+              '2026-08-27',
+              '2026-08-28',
+              '2026-08-29',
+            ],
+            'temperature_2m_max': [40, 39, 39, 37],
+            'temperature_2m_min': [21, 21, 22, 20],
+            'weather_code': [45, 0, 0, 3],
+            'sunset': ['2026-08-26T19:26'],
+            'uv_index_max': [8],
+          },
+        }),
+      );
+
+      final result = await client.fetchCurrentWeather(
+        latitude: 1,
+        longitude: 2,
+      );
+
+      expect(result.forecastDays, hasLength(4));
+      expect(result.forecastDays.first.maxCelsius, 40);
+      expect(result.forecastDays.first.minCelsius, 21);
+      expect(result.forecastDays.first.condition, WeatherCondition.fog);
+      expect(result.forecastDays[1].condition, WeatherCondition.clear);
+      expect(result.forecastDays.last.maxCelsius, 37);
     });
 
     group('maps weather_code to a WeatherCondition', () {
