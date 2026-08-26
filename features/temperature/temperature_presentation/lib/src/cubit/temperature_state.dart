@@ -11,6 +11,9 @@ enum TemperatureStatus {
 
   /// The most recent fetch or refresh failed.
   error,
+
+  /// The user-selected indoor source is not available on this device.
+  sourceUnavailable,
 }
 
 /// {@template temperature_state}
@@ -55,6 +58,13 @@ class TemperatureState extends Equatable {
     this.weather,
   }) : status = TemperatureStatus.error;
 
+  /// The selected indoor source cannot produce a reading on this device.
+  const TemperatureState.sourceUnavailable({this.reading, this.weather})
+    : status = TemperatureStatus.sourceUnavailable,
+      errorMessage =
+          'This indoor temperature source is unavailable on this '
+          'device. Choose another source in Settings.';
+
   /// The current lifecycle status.
   final TemperatureStatus status;
 
@@ -64,8 +74,8 @@ class TemperatureState extends Equatable {
   /// The full outside conditions behind [reading], when known.
   final OutsideWeather? weather;
 
-  /// A human-readable error message, set only when [status] is
-  /// [TemperatureStatus.error].
+  /// A human-readable error message, set when [status] is
+  /// [TemperatureStatus.error] or [TemperatureStatus.sourceUnavailable].
   final String? errorMessage;
 
   @override

@@ -9,9 +9,6 @@ dev_dependencies:
 
 workspace:
   - apps/room_temperature_app
-  - features/auth/auth_domain
-  - features/auth/auth_data
-  - features/auth/auth_presentation
   - features/temperature/temperature_domain
   - features/temperature/temperature_data
   - features/temperature/temperature_presentation

@@ -2,11 +2,9 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:bloc/bloc.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
 import 'package:notifications_data/notifications_data.dart';
 import 'package:room_temperature_app/app/app.dart';
-import 'package:room_temperature_app/firebase_options.dart';
 import 'package:room_temperature_app/services/notifications_background.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,8 +32,6 @@ Future<void> bootstrap() async {
   };
 
   Bloc.observer = const AppBlocObserver();
-
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   final notificationSender = FlutterLocalNotificationSender();
   await notificationSender.initialize();

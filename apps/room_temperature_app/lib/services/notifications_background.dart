@@ -1,8 +1,6 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:notifications_data/notifications_data.dart';
 import 'package:notifications_domain/notifications_domain.dart';
-import 'package:room_temperature_app/firebase_options.dart';
-import 'package:room_temperature_app/services/current_user_cache.dart';
+import 'package:room_temperature_app/services/local_user.dart';
 import 'package:settings_data/settings_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:temperature_data/temperature_data.dart';
@@ -30,26 +28,24 @@ Future<void> registerThresholdMonitor() async {
 }
 
 /// The top-level WorkManager callback — runs in its own background isolate,
-/// so it re-initializes Firebase and constructs everything it needs from
-/// scratch rather than relying on any app-level singleton.
+/// so it constructs everything it needs from local storage rather than
+/// relying on any app-level singleton.
 @pragma('vm:entry-point')
 void notificationsCallbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     if (task != thresholdMonitorTaskName) return true;
 
-    final userId = await const CurrentUserCache().read();
-    if (userId == null) return true;
-
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
+    final prefs = await SharedPreferences.getInstance();
+    final temperatureRepository = LocalTemperatureRepository(
+      sharedPreferences: prefs,
     );
+    final settingsRepository = LocalSettingsRepository(
+      sharedPreferences: prefs,
+    );
+    final breachCache = _BreachCache();
 
     final sender = FlutterLocalNotificationSender();
     await sender.initialize();
-
-    final temperatureRepository = FirestoreTemperatureRepository();
-    final settingsRepository = FirestoreSettingsRepository();
-    final breachCache = _BreachCache();
 
     final monitor = ThresholdMonitor(
       evaluateAndNotify: EvaluateAndNotifyCommand(
@@ -68,7 +64,7 @@ void notificationsCallbackDispatcher() {
       setLastBreach: breachCache.write,
     );
 
-    await monitor.check(userId);
+    await monitor.check(localUserId);
     return true;
   });
 }

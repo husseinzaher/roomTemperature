@@ -192,10 +192,8 @@ class _Content extends StatelessWidget {
                 ),
                 unit: units.symbol,
                 badge: GlassChip(
-                  icon: reading!.isEstimated
-                      ? Icons.auto_awesome_outlined
-                      : Icons.sensors_outlined,
-                  label: reading!.isEstimated ? l10n.estimated : l10n.sensor,
+                  icon: _sourceIcon(reading!.roomTemperatureSource),
+                  label: _sourceLabel(reading!.roomTemperatureSource),
                 ),
               ),
               const SizedBox(height: 26),
@@ -241,7 +239,8 @@ class _Content extends StatelessWidget {
                 timestamp: reading!.timestamp,
                 prefix: l10n.lastUpdated,
               ),
-              if (state.status == TemperatureStatus.error)
+              if (state.status == TemperatureStatus.error ||
+                  state.status == TemperatureStatus.sourceUnavailable)
                 _InlineError(
                   message: state.errorMessage ?? l10n.errorGeneric,
                 ),
@@ -256,6 +255,26 @@ class _Content extends StatelessWidget {
         );
       },
     );
+  }
+
+  IconData _sourceIcon(RoomTemperatureSource source) {
+    return switch (source) {
+      RoomTemperatureSource.ambientSensor => Icons.sensors_outlined,
+      RoomTemperatureSource.bluetoothSensor => Icons.bluetooth_outlined,
+      RoomTemperatureSource.batteryTemperature => Icons.battery_4_bar_outlined,
+      RoomTemperatureSource.manual => Icons.edit_outlined,
+      RoomTemperatureSource.estimated => Icons.auto_awesome_outlined,
+    };
+  }
+
+  String _sourceLabel(RoomTemperatureSource source) {
+    return switch (source) {
+      RoomTemperatureSource.ambientSensor => 'Phone Sensor',
+      RoomTemperatureSource.bluetoothSensor => 'Bluetooth Sensor',
+      RoomTemperatureSource.batteryTemperature => 'Battery Temperature',
+      RoomTemperatureSource.manual => 'Manual',
+      RoomTemperatureSource.estimated => 'Estimated',
+    };
   }
 
   static void _showHelp(
@@ -300,7 +319,8 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (state.status == TemperatureStatus.error) {
+    if (state.status == TemperatureStatus.error ||
+        state.status == TemperatureStatus.sourceUnavailable) {
       return Padding(
         padding: const EdgeInsets.only(top: 80),
         child: GlassCard(

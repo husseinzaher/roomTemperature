@@ -11,7 +11,7 @@ void main() {
 
     Reading readingAt(double celsius) => Reading(
       roomTemperatureCelsius: celsius,
-      roomTemperatureSource: RoomTemperatureSource.sensor,
+      roomTemperatureSource: RoomTemperatureSource.ambientSensor,
       outsideTemperatureCelsius: 15,
       timestamp: DateTime(2026),
     );

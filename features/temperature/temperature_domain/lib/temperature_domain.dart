@@ -3,6 +3,7 @@ library;
 
 export 'src/commands/record_reading_command.dart';
 export 'src/estimator/room_temperature_estimator.dart';
+export 'src/models/indoor_temperature_reading.dart';
 export 'src/models/location.dart';
 export 'src/models/outside_weather.dart';
 export 'src/models/reading.dart';

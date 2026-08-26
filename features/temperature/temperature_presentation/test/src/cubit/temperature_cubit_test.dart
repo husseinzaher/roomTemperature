@@ -47,6 +47,8 @@ void main() {
     TemperatureCubit buildCubit({
       Stream<Reading?>? watchStream,
       Future<double?> Function()? readAmbientSensor,
+      Future<IndoorTemperatureReading?> Function(OutsideWeather weather)?
+      resolveIndoorTemperature,
       double indoorOffset = 2,
     }) {
       when(
@@ -67,6 +69,7 @@ void main() {
         getLocation: () async => location,
         getIndoorOffset: () => indoorOffset,
         readAmbientSensor: readAmbientSensor,
+        resolveIndoorTemperature: resolveIndoorTemperature,
       );
     }
 
@@ -104,7 +107,7 @@ void main() {
             .having(
               (s) => s.reading?.roomTemperatureSource,
               'roomTemperatureSource',
-              RoomTemperatureSource.sensor,
+              RoomTemperatureSource.ambientSensor,
             )
             .having(
               (s) => s.reading?.roomTemperatureCelsius,
@@ -126,7 +129,7 @@ void main() {
               that: isA<Reading>().having(
                 (r) => r.roomTemperatureSource,
                 'roomTemperatureSource',
-                RoomTemperatureSource.sensor,
+                RoomTemperatureSource.ambientSensor,
               ),
             ),
           ),
@@ -244,6 +247,66 @@ void main() {
         isA<TemperatureState>()
             .having((s) => s.status, 'status', TemperatureStatus.error)
             .having((s) => s.reading, 'reading', cachedReading),
+      ],
+    );
+
+    blocTest<TemperatureCubit, TemperatureState>(
+      'refresh() uses a resolved battery temperature reading',
+      build: () => buildCubit(
+        resolveIndoorTemperature: (_) async => const IndoorTemperatureReading(
+          celsius: 36.5,
+          source: IndoorTemperatureSource.batteryTemperature,
+        ),
+      ),
+      setUp: () {
+        when(
+          () => weatherRepository.fetchOutsideWeather(location: location),
+        ).thenAnswer((_) async => weatherAt(22));
+      },
+      act: (cubit) => cubit.refresh(),
+      expect: () => [
+        isA<TemperatureState>().having(
+          (s) => s.status,
+          'status',
+          TemperatureStatus.loading,
+        ),
+        isA<TemperatureState>()
+            .having((s) => s.status, 'status', TemperatureStatus.loaded)
+            .having(
+              (s) => s.reading?.roomTemperatureSource,
+              'roomTemperatureSource',
+              RoomTemperatureSource.batteryTemperature,
+            )
+            .having(
+              (s) => s.reading?.roomTemperatureCelsius,
+              'roomTemperatureCelsius',
+              36.5,
+            ),
+      ],
+    );
+
+    blocTest<TemperatureCubit, TemperatureState>(
+      'refresh() emits sourceUnavailable when the resolver returns null',
+      build: () => buildCubit(
+        resolveIndoorTemperature: (_) async => null,
+      ),
+      setUp: () {
+        when(
+          () => weatherRepository.fetchOutsideWeather(location: location),
+        ).thenAnswer((_) async => weatherAt(22));
+      },
+      act: (cubit) => cubit.refresh(),
+      expect: () => [
+        isA<TemperatureState>().having(
+          (s) => s.status,
+          'status',
+          TemperatureStatus.loading,
+        ),
+        isA<TemperatureState>().having(
+          (s) => s.status,
+          'status',
+          TemperatureStatus.sourceUnavailable,
+        ),
       ],
     );
   });

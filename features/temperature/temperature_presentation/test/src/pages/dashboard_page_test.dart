@@ -119,6 +119,48 @@ void main() {
       expect(find.text('Estimated'), findsOneWidget);
     });
 
+    testWidgets('labels a battery reading as Battery Temperature', (
+      tester,
+    ) async {
+      cubit.emit(
+        TemperatureState.loaded(
+          reading: Reading(
+            roomTemperatureCelsius: 36.5,
+            roomTemperatureSource: RoomTemperatureSource.batteryTemperature,
+            outsideTemperatureCelsius: 21,
+            timestamp: DateTime.utc(2026, 1, 1, 12),
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      expect(find.text('36.5'), findsOneWidget);
+      expect(find.text('Battery Temperature'), findsOneWidget);
+      expect(find.text('Room Temperature'), findsNothing);
+      expect(find.text('Phone Sensor'), findsNothing);
+    });
+
+    testWidgets('labels an ambient reading as Phone Sensor', (tester) async {
+      cubit.emit(
+        TemperatureState.loaded(
+          reading: Reading(
+            roomTemperatureCelsius: 20.4,
+            roomTemperatureSource: RoomTemperatureSource.ambientSensor,
+            outsideTemperatureCelsius: 21,
+            timestamp: DateTime.utc(2026, 1, 1, 12),
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      expect(find.text('20.4'), findsOneWidget);
+      expect(find.text('Phone Sensor'), findsOneWidget);
+    });
+
     testWidgets('renders both section headers', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();

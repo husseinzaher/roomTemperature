@@ -1,10 +1,4 @@
-import 'dart:async';
-
 import 'package:app_localization/app_localization.dart';
-import 'package:auth_data/auth_data.dart';
-import 'package:auth_domain/auth_domain.dart';
-import 'package:auth_presentation/auth_presentation.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:history_data/history_data.dart';
@@ -13,12 +7,10 @@ import 'package:home_widget_bridge/home_widget_bridge.dart';
 import 'package:notifications_data/notifications_data.dart';
 import 'package:notifications_domain/notifications_domain.dart';
 import 'package:provider/provider.dart';
-import 'package:room_temperature_app/routing/go_router_refresh_stream.dart';
 import 'package:room_temperature_app/routing/router.dart';
 import 'package:room_temperature_app/services/ambient_sensor_service.dart';
-import 'package:room_temperature_app/services/current_user_cache.dart';
-import 'package:room_temperature_app/services/debug_auth_repository.dart';
-import 'package:room_temperature_app/services/fcm_token_sync.dart';
+import 'package:room_temperature_app/services/battery_temperature_service.dart';
+import 'package:room_temperature_app/services/indoor_temperature_service.dart';
 import 'package:room_temperature_app/services/location_service.dart';
 import 'package:settings_data/settings_data.dart';
 import 'package:settings_domain/settings_domain.dart';
@@ -50,22 +42,32 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // In debug builds only, wrap the real repository with a bypass that can
-    // sign in locally without Firebase — useful before Email/Password
-    // sign-in is enabled in the console, or for quick manual testing.
-    // kDebugMode is a compile-time constant, so this branch (and
-    // DebugAuthRepository itself) is compiled out of release/profile
-    // builds entirely.
-    final authRepository = kDebugMode
-        ? DebugAuthRepository(FirebaseAuthRepository())
-        : FirebaseAuthRepository();
     final weatherRepository = OpenMeteoWeatherRepository(OpenMeteoClient());
-    final temperatureRepository = FirestoreTemperatureRepository();
-    final historyRepository = FirestoreHistoryRepository();
-    final settingsRepository = FirestoreSettingsRepository(
-      localCache: sharedPreferences,
+    final temperatureRepository = LocalTemperatureRepository(
+      sharedPreferences: sharedPreferences,
     );
-    final notificationTokenRepository = FirestoreNotificationTokenRepository();
+    final historyRepository = LocalHistoryRepository(
+      sharedPreferences: sharedPreferences,
+    );
+    final settingsRepository = LocalSettingsRepository(
+      sharedPreferences: sharedPreferences,
+    );
+    const ambientSensorService = AmbientSensorService();
+    const batteryTemperatureService = BatteryTemperatureService();
+    final indoorTemperatureService = IndoorTemperatureService(
+      ambientProvider: const AndroidAmbientTemperatureProvider(
+        ambientSensorService,
+      ),
+      bluetoothProvider: const BluetoothTemperatureProvider(),
+      batteryProvider: const BatteryTemperatureProvider(
+        batteryTemperatureService,
+      ),
+      manualProvider: ManualTemperatureProvider(
+        () => settingsRepository
+            .lastSettingsOrDefault()
+            .manualIndoorTemperatureCelsius,
+      ),
+    );
 
     return MultiProvider(
       providers: [
@@ -73,20 +75,21 @@ class App extends StatelessWidget {
         Provider<IWeatherRepository>.value(value: weatherRepository),
         Provider<IHistoryRepository>.value(value: historyRepository),
         Provider<ISettingsRepository>.value(value: settingsRepository),
+        Provider<LocalSettingsRepository>.value(value: settingsRepository),
         Provider<INotificationSender>.value(value: notificationSender),
-        Provider<INotificationTokenRepository>.value(
-          value: notificationTokenRepository,
-        ),
         Provider<HomeWidgetBridge>.value(value: const HomeWidgetBridge()),
         Provider<LocationService>.value(value: const LocationService()),
         Provider<AmbientSensorService>.value(
-          value: const AmbientSensorService(),
+          value: ambientSensorService,
+        ),
+        Provider<BatteryTemperatureService>.value(
+          value: batteryTemperatureService,
+        ),
+        Provider<IndoorTemperatureService>.value(
+          value: indoorTemperatureService,
         ),
       ],
-      child: AuthModule(
-        authRepository: authRepository,
-        child: const _AppView(),
-      ),
+      child: const _AppView(),
     );
   }
 }
@@ -100,75 +103,14 @@ class _AppView extends StatefulWidget {
 
 class _AppViewState extends State<_AppView> {
   late final GoRouter _router;
-  late final AuthStatusCubit _authStatusCubit;
-  late final FcmTokenSync _fcmTokenSync;
-  StreamSubscription<AuthUser?>? _authSubscription;
-  bool _authStateKnown = false;
-
-  static const _loggingInPaths = {'/login', '/signup', '/forgot-password'};
 
   @override
   void initState() {
     super.initState();
-    _authStatusCubit = context.read<AuthStatusCubit>();
-    _fcmTokenSync = FcmTokenSync(
-      tokenRepository: context.read<INotificationTokenRepository>(),
-    );
-
     _router = GoRouter(
-      initialLocation: const SplashRoute().location,
-      refreshListenable: GoRouterRefreshStream(_authStatusCubit.stream),
-      redirect: (context, state) => _redirect(state),
+      initialLocation: const HomeRoute().location,
       routes: $appRoutes,
     );
-
-    _authSubscription = _authStatusCubit.stream.listen((user) {
-      _authStateKnown = true;
-      unawaited(_handleAuthChange(user));
-      // GoRouterRefreshStream's own listener on this same stream may have
-      // already re-run redirect() before _authStateKnown flipped above (the
-      // two listeners race), and nothing else prompts another check — so
-      // explicitly refresh once the flag is actually true.
-      _router.refresh();
-    });
-  }
-
-  Future<void> _handleAuthChange(AuthUser? user) async {
-    await const CurrentUserCache().save(user?.uid);
-    if (user != null) {
-      await _fcmTokenSync.start(user.uid);
-    } else {
-      await _fcmTokenSync.stop();
-    }
-  }
-
-  String? _redirect(GoRouterState state) {
-    if (!_authStateKnown) {
-      return state.matchedLocation == const SplashRoute().location
-          ? null
-          : const SplashRoute().location;
-    }
-
-    final isSignedIn = _authStatusCubit.state != null;
-    final atLoggingInPath = _loggingInPaths.contains(state.matchedLocation);
-
-    if (!isSignedIn) {
-      return atLoggingInPath ? null : const LoginRoute().location;
-    }
-
-    if (atLoggingInPath ||
-        state.matchedLocation == const SplashRoute().location) {
-      return const HomeRoute().location;
-    }
-
-    return null;
-  }
-
-  @override
-  void dispose() {
-    unawaited(_authSubscription?.cancel());
-    unawaited(_fcmTokenSync.stop());
-    super.dispose();
   }
 
   @override

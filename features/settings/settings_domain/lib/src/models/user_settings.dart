@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:settings_domain/src/models/indoor_temperature_preference.dart';
 import 'package:settings_domain/src/models/threshold_settings.dart';
 import 'package:settings_domain/src/models/units.dart';
 
@@ -18,6 +19,8 @@ class UserSettings extends Equatable {
     required this.units,
     required this.threshold,
     required this.indoorOffsetCelsius,
+    this.indoorTemperaturePreference = IndoorTemperaturePreference.automatic,
+    this.manualIndoorTemperatureCelsius,
   });
 
   /// A sensible set of defaults for a brand-new user: Celsius display units,
@@ -31,6 +34,7 @@ class UserSettings extends Equatable {
       enabled: false,
     ),
     indoorOffsetCelsius: 0,
+    indoorTemperaturePreference: IndoorTemperaturePreference.automatic,
   );
 
   /// The user's preferred display unit.
@@ -43,19 +47,38 @@ class UserSettings extends Equatable {
   /// produce the room-temperature estimate.
   final double indoorOffsetCelsius;
 
+  /// The user's preferred indoor-temperature source.
+  final IndoorTemperaturePreference indoorTemperaturePreference;
+
+  /// The manually entered indoor temperature, used only when
+  /// [indoorTemperaturePreference] is [IndoorTemperaturePreference.manual].
+  final double? manualIndoorTemperatureCelsius;
+
   /// Returns a copy of this [UserSettings] with the given fields replaced.
   UserSettings copyWith({
     Units? units,
     ThresholdSettings? threshold,
     double? indoorOffsetCelsius,
+    IndoorTemperaturePreference? indoorTemperaturePreference,
+    double? manualIndoorTemperatureCelsius,
   }) {
     return UserSettings(
       units: units ?? this.units,
       threshold: threshold ?? this.threshold,
       indoorOffsetCelsius: indoorOffsetCelsius ?? this.indoorOffsetCelsius,
+      indoorTemperaturePreference:
+          indoorTemperaturePreference ?? this.indoorTemperaturePreference,
+      manualIndoorTemperatureCelsius:
+          manualIndoorTemperatureCelsius ?? this.manualIndoorTemperatureCelsius,
     );
   }
 
   @override
-  List<Object?> get props => [units, threshold, indoorOffsetCelsius];
+  List<Object?> get props => [
+    units,
+    threshold,
+    indoorOffsetCelsius,
+    indoorTemperaturePreference,
+    manualIndoorTemperatureCelsius,
+  ];
 }

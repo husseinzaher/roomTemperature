@@ -46,10 +46,10 @@ void main() {
       expect(reading.isEstimated, isTrue);
     });
 
-    test('isEstimated is false for RoomTemperatureSource.sensor', () {
+    test('isEstimated is false for RoomTemperatureSource.ambientSensor', () {
       final reading = Reading(
         roomTemperatureCelsius: 22,
-        roomTemperatureSource: RoomTemperatureSource.sensor,
+        roomTemperatureSource: RoomTemperatureSource.ambientSensor,
         outsideTemperatureCelsius: 18,
         timestamp: timestamp,
       );

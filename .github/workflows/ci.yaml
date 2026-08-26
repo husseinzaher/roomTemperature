@@ -18,8 +18,6 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - features/auth/auth_domain
-          - features/auth/auth_data
           - features/temperature/temperature_domain
           - features/temperature/temperature_data
           - features/history/history_domain
@@ -39,7 +37,6 @@ jobs:
       fail-fast: false
       matrix:
         package:
-          - features/auth/auth_presentation
           - features/temperature/temperature_presentation
           - features/history/history_presentation
           - features/settings/settings_presentation

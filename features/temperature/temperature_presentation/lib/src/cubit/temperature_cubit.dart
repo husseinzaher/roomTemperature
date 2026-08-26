@@ -10,11 +10,10 @@ import 'package:temperature_presentation/src/cubit/temperature_state.dart';
 /// This cubit is deliberately ignorant of *how* the device location and the
 /// user's indoor offset are obtained — those are injected as closures
 /// ([_getLocation], [_getIndoorOffset]) so this package never needs to
-/// depend on a settings or location feature. [_readAmbientSensor] is
-/// likewise injected: on most phones there is no real ambient-temperature
-/// sensor, so it is expected to be `null` or to resolve to `null`, in which
-/// case the room temperature is estimated from the real outside temperature
-/// plus the indoor offset via [_estimator].
+/// depend on a settings or location feature. When
+/// [_resolveIndoorTemperature] is provided, that resolver owns indoor
+/// source selection. [_readAmbientSensor] remains a test/legacy fallback
+/// used only when no resolver is injected.
 /// {@endtemplate}
 class TemperatureCubit extends Cubit<TemperatureState> {
   /// {@macro temperature_cubit}
@@ -26,6 +25,7 @@ class TemperatureCubit extends Cubit<TemperatureState> {
     required this._getLocation,
     required this._getIndoorOffset,
     this._readAmbientSensor,
+    this._resolveIndoorTemperature,
   }) : _temperatureRepository = temperatureRepository,
        super(const TemperatureState.loading()) {
     _subscription = temperatureRepository
@@ -42,6 +42,8 @@ class TemperatureCubit extends Cubit<TemperatureState> {
   final Future<Location> Function() _getLocation;
   final double Function() _getIndoorOffset;
   final Future<double?> Function()? _readAmbientSensor;
+  final Future<IndoorTemperatureReading?> Function(OutsideWeather weather)?
+  _resolveIndoorTemperature;
 
   StreamSubscription<Reading?>? _subscription;
 
@@ -84,27 +86,47 @@ class TemperatureCubit extends Cubit<TemperatureState> {
         location: location,
       );
       final outsideTemperatureCelsius = weather.temperatureCelsius;
-      final sensorTemperatureCelsius = await _readAmbientSensor?.call();
 
       final Reading reading;
-      if (sensorTemperatureCelsius != null) {
+      final resolvedIndoorTemperature = await _resolveIndoorTemperature?.call(
+        weather,
+      );
+      if (resolvedIndoorTemperature != null) {
         reading = Reading(
-          roomTemperatureCelsius: sensorTemperatureCelsius,
-          roomTemperatureSource: RoomTemperatureSource.sensor,
+          roomTemperatureCelsius: resolvedIndoorTemperature.celsius,
+          roomTemperatureSource: resolvedIndoorTemperature.source,
           outsideTemperatureCelsius: outsideTemperatureCelsius,
           timestamp: DateTime.now(),
         );
+      } else if (_resolveIndoorTemperature != null) {
+        emit(
+          TemperatureState.sourceUnavailable(
+            reading: state.reading,
+            weather: weather,
+          ),
+        );
+        return;
       } else {
-        final estimatedRoomTemperatureCelsius = _estimator.estimate(
-          outsideTemperatureCelsius: outsideTemperatureCelsius,
-          indoorOffsetCelsius: _getIndoorOffset(),
-        );
-        reading = Reading(
-          roomTemperatureCelsius: estimatedRoomTemperatureCelsius,
-          roomTemperatureSource: RoomTemperatureSource.estimated,
-          outsideTemperatureCelsius: outsideTemperatureCelsius,
-          timestamp: DateTime.now(),
-        );
+        final sensorTemperatureCelsius = await _readAmbientSensor?.call();
+        if (sensorTemperatureCelsius != null) {
+          reading = Reading(
+            roomTemperatureCelsius: sensorTemperatureCelsius,
+            roomTemperatureSource: RoomTemperatureSource.ambientSensor,
+            outsideTemperatureCelsius: outsideTemperatureCelsius,
+            timestamp: DateTime.now(),
+          );
+        } else {
+          final estimatedRoomTemperatureCelsius = _estimator.estimate(
+            outsideTemperatureCelsius: outsideTemperatureCelsius,
+            indoorOffsetCelsius: _getIndoorOffset(),
+          );
+          reading = Reading(
+            roomTemperatureCelsius: estimatedRoomTemperatureCelsius,
+            roomTemperatureSource: RoomTemperatureSource.estimated,
+            outsideTemperatureCelsius: outsideTemperatureCelsius,
+            timestamp: DateTime.now(),
+          );
+        }
       }
 
       // Show the fresh reading regardless of whether it persists: storage

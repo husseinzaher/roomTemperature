@@ -1,5 +1,5 @@
 name: notifications_data
-description: "Notifications data: local + FCM notification sender, threshold monitor"
+description: "Notifications data: local notification sender and threshold monitor"
 version: 0.1.0+1
 publish_to: none
 resolution: workspace
@@ -9,8 +9,6 @@ environment:
   flutter: ">=3.24.0"
 
 dependencies:
-  cloud_firestore: ^6.9.0
-  firebase_messaging: ^16.6.0
   flutter_local_notifications: ^22.3.0
   notifications_domain:
     path: ../notifications_domain
@@ -21,7 +19,6 @@ dependencies:
     path: ../../temperature/temperature_domain
 
 dev_dependencies:
-  fake_cloud_firestore: ^4.2.0
   mocktail: ^1.0.5
   test: '>=1.24.0 <=1.31.1'
   very_good_analysis: ^10.3.0

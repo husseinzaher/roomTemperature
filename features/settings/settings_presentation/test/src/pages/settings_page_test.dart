@@ -68,7 +68,53 @@ void main() {
       expect(find.byType(SwitchListTile), findsOneWidget);
       expect(find.byType(RangeSlider), findsOneWidget);
       expect(find.byType(Slider), findsOneWidget);
+      await tester.scrollUntilVisible(find.byType(PrimaryButton), 200);
       expect(find.byType(PrimaryButton), findsOneWidget);
+    });
+
+    testWidgets('renders indoor temperature source radios', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      await tester.drag(find.byType(ListView), const Offset(0, -600));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Indoor Temperature Source'), findsOneWidget);
+      expect(find.text('Automatic'), findsOneWidget);
+      expect(find.text('Phone Ambient Sensor'), findsOneWidget);
+      expect(find.text('Bluetooth Sensor'), findsOneWidget);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Battery Temperature'), findsOneWidget);
+      expect(find.text('Manual'), findsOneWidget);
+      expect(find.text('Estimated'), findsOneWidget);
+    });
+
+    testWidgets('shows the battery warning when battery is selected', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      await tester.drag(find.byType(ListView), const Offset(0, -800));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.widgetWithText(
+          RadioListTile<IndoorTemperaturePreference>,
+          'Battery Temperature',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining(
+          'Battery temperature is the temperature of the phone battery',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('tapping save persists the edited settings via the '
@@ -76,6 +122,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
+      await tester.scrollUntilVisible(find.byType(PrimaryButton), 200);
       await tester.tap(find.byType(PrimaryButton));
       await tester.pump();
 

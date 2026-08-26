@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:app_localization/app_localization.dart';
-import 'package:auth_presentation/auth_presentation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:history_domain/history_domain.dart';
 import 'package:history_presentation/history_presentation.dart';
 import 'package:home_widget_bridge/home_widget_bridge.dart';
-import 'package:room_temperature_app/services/ambient_sensor_service.dart';
+import 'package:room_temperature_app/services/indoor_temperature_service.dart';
+import 'package:room_temperature_app/services/local_user.dart';
 import 'package:room_temperature_app/services/location_service.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:settings_presentation/settings_presentation.dart';
@@ -15,7 +15,7 @@ import 'package:temperature_domain/temperature_domain.dart';
 import 'package:temperature_presentation/temperature_presentation.dart';
 import 'package:ui_kit/ui_kit.dart';
 
-/// The signed-in app shell: the dashboard, history, and settings tabs behind
+/// The local-only app shell: the dashboard, history, and settings tabs behind
 /// a floating glass navigation bar, wiring the settings, temperature,
 /// history, and (headless) notification-threshold features together for the
 /// current user.
@@ -25,18 +25,10 @@ class HomeShellPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userId = context.watch<AuthStatusCubit>().state?.uid;
-    if (userId == null) {
-      // The router's redirect logic keeps unauthenticated users off this
-      // route; this is just a defensive fallback during the brief moment
-      // a sign-out is propagating.
-      return const SizedBox.shrink();
-    }
-
     return SettingsModule(
-      userId: userId,
+      userId: localUserId,
       settingsRepository: context.read<ISettingsRepository>(),
-      child: _TemperatureAndHistoryScope(userId: userId),
+      child: const _TemperatureAndHistoryScope(userId: localUserId),
     );
   }
 }
@@ -58,8 +50,15 @@ class _TemperatureAndHistoryScope extends StatelessWidget {
       getLocation: () => context.read<LocationService>().getCurrentLocation(),
       getIndoorOffset: () =>
           settingsCubit.state.settings?.indoorOffsetCelsius ?? 0,
-      readAmbientSensor: () =>
-          context.read<AmbientSensorService>().readCelsius(),
+      resolveIndoorTemperature: (weather) {
+        final settings =
+            settingsCubit.state.settings ?? UserSettings.defaults();
+        return context.read<IndoorTemperatureService>().resolve(
+          preference: settings.indoorTemperaturePreference,
+          weather: weather,
+          indoorOffsetCelsius: settings.indoorOffsetCelsius,
+        );
+      },
       child: HistoryModule(
         userId: userId,
         historyRepository: context.read<IHistoryRepository>(),
@@ -116,7 +115,36 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
                     onOpenSettings: () => setState(() => _index = 2),
                   ),
                   const _TabScaffold(child: HistoryPage()),
-                  const _TabScaffold(child: SettingsPage()),
+                  _TabScaffold(
+                    child: SettingsPage(
+                      loadIndoorTemperatureSourceAvailability: () async {
+                        final availability = await context
+                            .read<IndoorTemperatureService>()
+                            .availability();
+                        return {
+                          IndoorTemperaturePreference.automatic: true,
+                          IndoorTemperaturePreference.ambientSensor:
+                              availability[IndoorTemperatureSource
+                                  .ambientSensor] ??
+                              false,
+                          IndoorTemperaturePreference.bluetoothSensor:
+                              availability[IndoorTemperatureSource
+                                  .bluetoothSensor] ??
+                              false,
+                          IndoorTemperaturePreference.batteryTemperature:
+                              availability[IndoorTemperatureSource
+                                  .batteryTemperature] ??
+                              false,
+                          IndoorTemperaturePreference.manual:
+                              availability[IndoorTemperatureSource.manual] ??
+                              false,
+                          IndoorTemperaturePreference.estimated:
+                              availability[IndoorTemperatureSource.estimated] ??
+                              true,
+                        };
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),

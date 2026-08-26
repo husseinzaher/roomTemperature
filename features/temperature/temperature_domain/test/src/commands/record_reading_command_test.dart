@@ -44,7 +44,7 @@ void main() {
     test('propagates errors from the repository', () async {
       final reading = Reading(
         roomTemperatureCelsius: 22,
-        roomTemperatureSource: RoomTemperatureSource.sensor,
+        roomTemperatureSource: RoomTemperatureSource.ambientSensor,
         outsideTemperatureCelsius: 18,
         timestamp: DateTime(2026),
       );

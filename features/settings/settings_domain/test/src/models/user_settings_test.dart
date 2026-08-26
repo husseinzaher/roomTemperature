@@ -11,6 +11,11 @@ void main() {
       expect(defaults.threshold.maxCelsius, 28);
       expect(defaults.threshold.enabled, isFalse);
       expect(defaults.indoorOffsetCelsius, 0.0);
+      expect(
+        defaults.indoorTemperaturePreference,
+        IndoorTemperaturePreference.automatic,
+      );
+      expect(defaults.manualIndoorTemperatureCelsius, isNull);
     });
 
     test('supports value equality', () {
@@ -33,6 +38,17 @@ void main() {
         isNot(
           equals(
             defaults.copyWith(
+              indoorTemperaturePreference:
+                  IndoorTemperaturePreference.batteryTemperature,
+            ),
+          ),
+        ),
+      );
+      expect(
+        defaults,
+        isNot(
+          equals(
+            defaults.copyWith(
               threshold: defaults.threshold.copyWith(enabled: true),
             ),
           ),
@@ -47,6 +63,10 @@ void main() {
       expect(updated.indoorOffsetCelsius, 2.5);
       expect(updated.units, defaults.units);
       expect(updated.threshold, defaults.threshold);
+      expect(
+        updated.indoorTemperaturePreference,
+        defaults.indoorTemperaturePreference,
+      );
     });
   });
 }

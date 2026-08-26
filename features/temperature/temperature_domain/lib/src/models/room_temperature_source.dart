@@ -1,9 +1,22 @@
-/// The source that produced a room temperature value.
-enum RoomTemperatureSource {
-  /// The room temperature was estimated from the outside temperature plus
-  /// a user-adjustable indoor offset. There is no real ambient sensor.
-  estimated,
+/// The source that produced the displayed indoor temperature value.
+enum IndoorTemperatureSource {
+  /// A real Android ambient-temperature sensor
+  /// (`Sensor.TYPE_AMBIENT_TEMPERATURE`).
+  ambientSensor,
 
-  /// The room temperature came from a real ambient sensor reading.
-  sensor,
+  /// An external Bluetooth temperature sensor.
+  bluetoothSensor,
+
+  /// The phone battery temperature. This is a device measurement, not an
+  /// actual ambient room measurement.
+  batteryTemperature,
+
+  /// A user-entered indoor temperature.
+  manual,
+
+  /// A weather-derived estimate.
+  estimated,
 }
+
+/// Backwards-compatible name used by the existing reading model.
+typedef RoomTemperatureSource = IndoorTemperatureSource;

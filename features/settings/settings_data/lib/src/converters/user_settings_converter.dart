@@ -2,14 +2,12 @@ import 'package:settings_domain/settings_domain.dart';
 
 /// {@template user_settings_converter}
 /// Converts between the domain [UserSettings] model and the plain
-/// `Map<String, dynamic>` shape stored on the `users/{userId}` Firestore
-/// profile document (and mirrored in the local cache).
+/// `Map<String, dynamic>` shape stored in the local settings cache.
 ///
 /// The map produced by [toMap] contains exactly the fields owned by the
 /// settings feature — `units`, `thresholdMinC`, `thresholdMaxC`,
-/// `thresholdEnabled`, `indoorOffsetC` — and nothing else, so that callers
-/// can safely merge-write it without clobbering fields owned by other
-/// features on the same document (e.g. notifications' `fcmToken`).
+/// `thresholdEnabled`, `indoorOffsetC`, `indoorTemperatureSource`,
+/// `manualIndoorTempC` — and nothing else.
 ///
 /// [fromMap] is deliberately tolerant of missing or malformed fields: a
 /// fresh or partial profile document must never crash the app, so any
@@ -20,24 +18,31 @@ class UserSettingsConverter {
   /// {@macro user_settings_converter}
   const UserSettingsConverter();
 
-  /// The Firestore/cache field name for [UserSettings.units].
+  /// The local cache field name for [UserSettings.units].
   static const String unitsField = 'units';
 
-  /// The Firestore/cache field name for
+  /// The local cache field name for
   /// [ThresholdSettings.minCelsius].
   static const String thresholdMinField = 'thresholdMinC';
 
-  /// The Firestore/cache field name for
+  /// The local cache field name for
   /// [ThresholdSettings.maxCelsius].
   static const String thresholdMaxField = 'thresholdMaxC';
 
-  /// The Firestore/cache field name for [ThresholdSettings.enabled].
+  /// The local cache field name for [ThresholdSettings.enabled].
   static const String thresholdEnabledField = 'thresholdEnabled';
 
-  /// The Firestore/cache field name for [UserSettings.indoorOffsetCelsius].
+  /// The local cache field name for [UserSettings.indoorOffsetCelsius].
   static const String indoorOffsetField = 'indoorOffsetC';
 
-  /// Builds a [UserSettings] from a raw Firestore/cache [data] map.
+  /// The local cache field name for the selected indoor-temperature source.
+  static const String indoorTemperaturePreferenceField =
+      'indoorTemperatureSource';
+
+  /// The local cache field name for the manual indoor temperature.
+  static const String manualIndoorTemperatureField = 'manualIndoorTempC';
+
+  /// Builds a [UserSettings] from a raw local [data] map.
   ///
   /// Any missing or malformed field falls back to the matching field of
   /// [UserSettings.defaults] instead of throwing.
@@ -64,17 +69,25 @@ class UserSettingsConverter {
         data[indoorOffsetField],
         defaults.indoorOffsetCelsius,
       ),
+      indoorTemperaturePreference: _preferenceOrDefault(
+        data[indoorTemperaturePreferenceField],
+        defaults.indoorTemperaturePreference,
+      ),
+      manualIndoorTemperatureCelsius:
+          _nullableDouble(data[manualIndoorTemperatureField]) ??
+          defaults.manualIndoorTemperatureCelsius,
     );
   }
 
-  /// Builds the exact Firestore/cache map for [settings]: only the five
-  /// fields this feature owns, no more, no less.
+  /// Builds the exact local cache map for [settings].
   Map<String, dynamic> toMap(UserSettings settings) => {
     unitsField: settings.units.name,
     thresholdMinField: settings.threshold.minCelsius,
     thresholdMaxField: settings.threshold.maxCelsius,
     thresholdEnabledField: settings.threshold.enabled,
     indoorOffsetField: settings.indoorOffsetCelsius,
+    indoorTemperaturePreferenceField: settings.indoorTemperaturePreference.name,
+    manualIndoorTemperatureField: settings.manualIndoorTemperatureCelsius,
   };
 
   Units _unitsOrDefault(Object? value, Units fallback) {
@@ -93,5 +106,21 @@ class UserSettingsConverter {
   bool _boolOrDefault(Object? value, bool fallback) {
     if (value is bool) return value;
     return fallback;
+  }
+
+  IndoorTemperaturePreference _preferenceOrDefault(
+    Object? value,
+    IndoorTemperaturePreference fallback,
+  ) {
+    if (value is! String) return fallback;
+    for (final preference in IndoorTemperaturePreference.values) {
+      if (preference.name == value) return preference;
+    }
+    return fallback;
+  }
+
+  double? _nullableDouble(Object? value) {
+    if (value is num) return value.toDouble();
+    return null;
   }
 }

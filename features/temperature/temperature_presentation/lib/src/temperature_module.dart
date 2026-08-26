@@ -23,6 +23,7 @@ class TemperatureModule extends StatelessWidget {
     required this.getIndoorOffset,
     required this.child,
     this.readAmbientSensor,
+    this.resolveIndoorTemperature,
     super.key,
   });
 
@@ -49,6 +50,11 @@ class TemperatureModule extends StatelessWidget {
   /// since most phones have no real ambient-temperature sensor.
   final Future<double?> Function()? readAmbientSensor;
 
+  /// Resolves the active indoor temperature using app-level source
+  /// selection.
+  final Future<IndoorTemperatureReading?> Function(OutsideWeather weather)?
+  resolveIndoorTemperature;
+
   /// The subtree that can access the provided [TemperatureCubit].
   final Widget child;
 
@@ -63,6 +69,7 @@ class TemperatureModule extends StatelessWidget {
         getLocation: getLocation,
         getIndoorOffset: getIndoorOffset,
         readAmbientSensor: readAmbientSensor,
+        resolveIndoorTemperature: resolveIndoorTemperature,
       ),
       child: child,
     );

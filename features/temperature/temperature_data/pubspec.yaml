@@ -1,5 +1,5 @@
 name: temperature_data
-description: "Temperature data: Open-Meteo + Firestore + sensor sources"
+description: "Temperature data: Open-Meteo + local sensor sources"
 version: 0.1.0+1
 publish_to: none
 resolution: workspace
@@ -8,13 +8,12 @@ environment:
   sdk: ^3.12.0
 
 dependencies:
-  cloud_firestore: ^6.9.0
   http: ^1.6.0
+  shared_preferences: ^2.5.5
   temperature_domain:
     path: ../temperature_domain
 
 dev_dependencies:
-  fake_cloud_firestore: ^4.2.0
   mocktail: ^1.0.5
   test: '>=1.24.0 <=1.31.1'
   very_good_analysis: ^10.3.0

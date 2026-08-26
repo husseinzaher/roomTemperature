@@ -16,7 +16,14 @@ import 'package:ui_kit/ui_kit.dart';
 /// {@endtemplate}
 class SettingsPage extends StatelessWidget {
   /// {@macro settings_page}
-  const SettingsPage({super.key});
+  const SettingsPage({
+    super.key,
+    this.loadIndoorTemperatureSourceAvailability,
+  });
+
+  /// Loads source availability for the source-selection controls.
+  final Future<Map<IndoorTemperaturePreference, bool>> Function()?
+  loadIndoorTemperatureSourceAvailability;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +64,8 @@ class SettingsPage extends StatelessWidget {
       errorMessage: state.status == SettingsStatus.error
           ? state.errorMessage
           : null,
+      loadIndoorTemperatureSourceAvailability:
+          loadIndoorTemperatureSourceAvailability,
       onSave: (updated) => context.read<SettingsCubit>().save(updated),
     );
   }
@@ -67,12 +76,15 @@ class _SettingsForm extends StatefulWidget {
     required this.initial,
     required this.isSaving,
     required this.onSave,
+    this.loadIndoorTemperatureSourceAvailability,
     this.errorMessage,
   });
 
   final UserSettings initial;
   final bool isSaving;
   final String? errorMessage;
+  final Future<Map<IndoorTemperaturePreference, bool>> Function()?
+  loadIndoorTemperatureSourceAvailability;
   final ValueChanged<UserSettings> onSave;
 
   @override
@@ -91,6 +103,8 @@ class _SettingsFormState extends State<_SettingsForm> {
   late double _maxCelsius;
   late bool _thresholdEnabled;
   late double _indoorOffsetCelsius;
+  late IndoorTemperaturePreference _indoorTemperaturePreference;
+  late double? _manualIndoorTemperatureCelsius;
 
   @override
   void initState() {
@@ -100,6 +114,9 @@ class _SettingsFormState extends State<_SettingsForm> {
     _maxCelsius = widget.initial.threshold.maxCelsius;
     _thresholdEnabled = widget.initial.threshold.enabled;
     _indoorOffsetCelsius = widget.initial.indoorOffsetCelsius;
+    _indoorTemperaturePreference = widget.initial.indoorTemperaturePreference;
+    _manualIndoorTemperatureCelsius =
+        widget.initial.manualIndoorTemperatureCelsius;
   }
 
   String _formatCelsius(double celsius) {
@@ -117,6 +134,8 @@ class _SettingsFormState extends State<_SettingsForm> {
           enabled: _thresholdEnabled,
         ),
         indoorOffsetCelsius: _indoorOffsetCelsius,
+        indoorTemperaturePreference: _indoorTemperaturePreference,
+        manualIndoorTemperatureCelsius: _manualIndoorTemperatureCelsius,
       ),
     );
   }
@@ -193,6 +212,87 @@ class _SettingsFormState extends State<_SettingsForm> {
           value: _indoorOffsetCelsius,
           onChanged: (value) => setState(() => _indoorOffsetCelsius = value),
         ),
+        const SizedBox(height: 32),
+        Text('Indoor Temperature Source', style: textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Automatic uses the first available source: Phone Ambient Sensor, '
+          'Bluetooth Sensor, Battery Temperature, Manual, then Estimated.',
+          style: textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        FutureBuilder<Map<IndoorTemperaturePreference, bool>>(
+          future: widget.loadIndoorTemperatureSourceAvailability?.call(),
+          builder: (context, snapshot) {
+            final availability = snapshot.data ?? const {};
+            return Column(
+              children: [
+                for (final preference in IndoorTemperaturePreference.values)
+                  RadioListTile<IndoorTemperaturePreference>(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(_sourceLabel(preference)),
+                    subtitle:
+                        preference == IndoorTemperaturePreference.automatic
+                        ? null
+                        : (_isUnavailable(preference, availability)
+                              ? const Text('Unavailable on this device')
+                              : null),
+                    value: preference,
+                    // RadioListTile still owns selection until RadioGroup
+                    // lands.
+                    // ignore: deprecated_member_use
+                    groupValue: _indoorTemperaturePreference,
+                    // RadioListTile still owns selection until RadioGroup
+                    // lands.
+                    // ignore: deprecated_member_use
+                    onChanged: _isUnavailable(preference, availability)
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            setState(() {
+                              _indoorTemperaturePreference = value;
+                              if (value == IndoorTemperaturePreference.manual &&
+                                  _manualIndoorTemperatureCelsius == null) {
+                                _manualIndoorTemperatureCelsius = 22;
+                              }
+                            });
+                          },
+                  ),
+              ],
+            );
+          },
+        ),
+        if (_indoorTemperaturePreference ==
+            IndoorTemperaturePreference.batteryTemperature) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Battery temperature is the temperature of the phone battery, '
+            'not the actual room temperature. It can be affected by charging, '
+            'CPU usage, sunlight, and device workload.',
+            style: textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        if (_indoorTemperaturePreference ==
+            IndoorTemperaturePreference.manual) ...[
+          const SizedBox(height: 16),
+          Text(
+            'Manual: ${_formatCelsius(_manualIndoorTemperatureCelsius ?? 22)}',
+          ),
+          Slider(
+            min: _minThresholdCelsius,
+            max: _maxThresholdCelsius,
+            divisions: (_maxThresholdCelsius - _minThresholdCelsius).round(),
+            label: _formatCelsius(_manualIndoorTemperatureCelsius ?? 22),
+            value: _manualIndoorTemperatureCelsius ?? 22,
+            onChanged: (value) => setState(
+              () => _manualIndoorTemperatureCelsius = value,
+            ),
+          ),
+        ],
         const SizedBox(height: 24),
         if (widget.errorMessage != null) ...[
           Text(
@@ -210,5 +310,28 @@ class _SettingsFormState extends State<_SettingsForm> {
         ),
       ],
     );
+  }
+
+  bool _isUnavailable(
+    IndoorTemperaturePreference preference,
+    Map<IndoorTemperaturePreference, bool> availability,
+  ) {
+    if (preference == IndoorTemperaturePreference.automatic ||
+        preference == IndoorTemperaturePreference.manual ||
+        preference == IndoorTemperaturePreference.estimated) {
+      return false;
+    }
+    return availability[preference] == false;
+  }
+
+  String _sourceLabel(IndoorTemperaturePreference preference) {
+    return switch (preference) {
+      IndoorTemperaturePreference.automatic => 'Automatic',
+      IndoorTemperaturePreference.ambientSensor => 'Phone Ambient Sensor',
+      IndoorTemperaturePreference.bluetoothSensor => 'Bluetooth Sensor',
+      IndoorTemperaturePreference.batteryTemperature => 'Battery Temperature',
+      IndoorTemperaturePreference.manual => 'Manual',
+      IndoorTemperaturePreference.estimated => 'Estimated',
+    };
   }
 }

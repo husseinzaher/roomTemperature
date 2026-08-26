@@ -7,7 +7,7 @@ void main() {
     const converter = UserSettingsConverter();
 
     group('toMap', () {
-      test('produces exactly the five owned fields', () {
+      test('produces exactly the local settings fields', () {
         const settings = UserSettings(
           units: Units.fahrenheit,
           threshold: ThresholdSettings(
@@ -16,6 +16,9 @@ void main() {
             enabled: true,
           ),
           indoorOffsetCelsius: 1.5,
+          indoorTemperaturePreference:
+              IndoorTemperaturePreference.batteryTemperature,
+          manualIndoorTemperatureCelsius: 22.5,
         );
 
         final map = converter.toMap(settings);
@@ -28,9 +31,11 @@ void main() {
             'thresholdMaxC': 25.0,
             'thresholdEnabled': true,
             'indoorOffsetC': 1.5,
+            'indoorTemperatureSource': 'batteryTemperature',
+            'manualIndoorTempC': 22.5,
           },
         );
-        expect(map.keys, hasLength(5));
+        expect(map.keys, hasLength(7));
       });
 
       test('encodes celsius units as "celsius"', () {
@@ -49,6 +54,8 @@ void main() {
             enabled: true,
           ),
           indoorOffsetCelsius: -2.5,
+          indoorTemperaturePreference: IndoorTemperaturePreference.manual,
+          manualIndoorTemperatureCelsius: 23,
         );
 
         expect(converter.fromMap(converter.toMap(settings)), settings);
@@ -65,6 +72,10 @@ void main() {
         expect(result.units, defaults.units);
         expect(result.threshold, defaults.threshold);
         expect(result.indoorOffsetCelsius, 3.0);
+        expect(
+          result.indoorTemperaturePreference,
+          defaults.indoorTemperaturePreference,
+        );
       });
 
       test('falls back when units is an unrecognized string', () {
@@ -108,6 +119,23 @@ void main() {
           result.threshold.enabled,
           UserSettings.defaults().threshold.enabled,
         );
+      });
+
+      test('falls back when indoor source is an unrecognized string', () {
+        final result = converter.fromMap(
+          const {'indoorTemperatureSource': 'phoneGuess'},
+        );
+
+        expect(
+          result.indoorTemperaturePreference,
+          IndoorTemperaturePreference.automatic,
+        );
+      });
+
+      test('accepts integer manual temperature values', () {
+        final result = converter.fromMap(const {'manualIndoorTempC': 21});
+
+        expect(result.manualIndoorTemperatureCelsius, 21.0);
       });
     });
   });

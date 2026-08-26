@@ -5,8 +5,9 @@ import 'package:flutter/services.dart';
 /// (`Sensor.TYPE_AMBIENT_TEMPERATURE` on Android), when the device has one.
 ///
 /// Most phones don't expose this sensor at all, so [readCelsius] returning
-/// `null` is the expected, common case — callers should fall back to the
-/// weather-based room-temperature estimate when that happens.
+/// `null` is the expected, common case — callers should fall through the
+/// indoor-temperature source priority (Bluetooth, battery, manual, then
+/// estimate) when that happens.
 /// {@endtemplate}
 class AmbientSensorService {
   /// {@macro ambient_sensor_service}
@@ -19,7 +20,7 @@ class AmbientSensorService {
   // one with an uninitialized/garbage value. Rather than trust any value a
   // sensor happens to report, only accept it if it falls within a generous
   // real-world ambient range — anything else is treated the same as "no
-  // sensor" and the caller falls back to the weather-based estimate.
+  // sensor" so Automatic can fall through to the next source.
   static const ({double min, double max}) _plausibleRange = (
     min: -40,
     max: 60,
@@ -43,6 +44,20 @@ class AmbientSensorService {
       return null;
     } on MissingPluginException {
       return null;
+    }
+  }
+
+  /// Returns whether Android reports a built-in ambient-temperature sensor.
+  Future<bool> isAvailable() async {
+    try {
+      return await _channel.invokeMethod<bool>(
+            'hasAmbientTemperatureSensor',
+          ) ??
+          false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
     }
   }
 }
