@@ -4,6 +4,7 @@ import 'package:app_localization/app_localization.dart';
 import 'package:auth_data/auth_data.dart';
 import 'package:auth_domain/auth_domain.dart';
 import 'package:auth_presentation/auth_presentation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:history_data/history_data.dart';
@@ -16,6 +17,7 @@ import 'package:room_temperature_app/routing/go_router_refresh_stream.dart';
 import 'package:room_temperature_app/routing/router.dart';
 import 'package:room_temperature_app/services/ambient_sensor_service.dart';
 import 'package:room_temperature_app/services/current_user_cache.dart';
+import 'package:room_temperature_app/services/debug_auth_repository.dart';
 import 'package:room_temperature_app/services/fcm_token_sync.dart';
 import 'package:room_temperature_app/services/location_service.dart';
 import 'package:settings_data/settings_data.dart';
@@ -48,7 +50,15 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authRepository = FirebaseAuthRepository();
+    // In debug builds only, wrap the real repository with a bypass that can
+    // sign in locally without Firebase — useful before Email/Password
+    // sign-in is enabled in the console, or for quick manual testing.
+    // kDebugMode is a compile-time constant, so this branch (and
+    // DebugAuthRepository itself) is compiled out of release/profile
+    // builds entirely.
+    final authRepository = kDebugMode
+        ? DebugAuthRepository(FirebaseAuthRepository())
+        : FirebaseAuthRepository();
     final weatherRepository = OpenMeteoWeatherRepository(OpenMeteoClient());
     final temperatureRepository = FirestoreTemperatureRepository();
     final historyRepository = FirestoreHistoryRepository();

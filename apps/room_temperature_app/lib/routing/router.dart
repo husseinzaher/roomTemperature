@@ -1,7 +1,11 @@
+import 'package:auth_domain/auth_domain.dart';
 import 'package:auth_presentation/auth_presentation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:room_temperature_app/home/home_shell_page.dart';
+import 'package:room_temperature_app/services/debug_auth_repository.dart';
 import 'package:room_temperature_app/splash/splash_page.dart';
 
 part 'router.g.dart';
@@ -27,9 +31,35 @@ class LoginRoute extends GoRouteData with $LoginRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) {
-    return LoginPage(
+    final loginPage = LoginPage(
       onNavigateToSignUp: () => const SignUpRoute().go(context),
       onNavigateToForgotPassword: () => const ForgotPasswordRoute().go(context),
+    );
+
+    if (!kDebugMode) return loginPage;
+
+    // Debug-only bypass so the app can be tested before Email/Password
+    // sign-in is enabled in the Firebase console. Compiled out of
+    // release/profile builds since kDebugMode is a compile-time constant.
+    return Stack(
+      children: [
+        loginPage,
+        Positioned(
+          bottom: 24,
+          right: 24,
+          child: FloatingActionButton.extended(
+            heroTag: 'debug-skip-auth',
+            onPressed: () {
+              final authRepository = context.read<IAuthRepository>();
+              if (authRepository is DebugAuthRepository) {
+                authRepository.debugSignInAsGuest();
+              }
+            },
+            icon: const Icon(Icons.bug_report_outlined),
+            label: const Text('Skip (debug)'),
+          ),
+        ),
+      ],
     );
   }
 }
