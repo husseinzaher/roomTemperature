@@ -11,8 +11,9 @@ const Color _splashCanvas = Color(0xFF0A162A);
 const Color _splashGlow = Color(0xFFFFB24A);
 
 /// {@template splash_page}
-/// Branded launch screen: the app logo eases in with a soft glow, the
-/// title follows, then the scene fades out before [onFinished].
+/// Branded launch screen: the app logo pops in with a glass sheen and a
+/// soft float, the title follows, then the scene fades out before
+/// [onFinished].
 /// {@endtemplate}
 class SplashPage extends StatefulWidget {
   /// {@macro splash_page}
@@ -22,7 +23,7 @@ class SplashPage extends StatefulWidget {
   static const String logoAsset = 'assets/branding/app_logo.png';
 
   /// Full intro length, including the exit fade.
-  static const Duration introDuration = Duration(milliseconds: 1800);
+  static const Duration introDuration = Duration(milliseconds: 2600);
 
   /// Called once the intro animation completes. The router uses this to
   /// replace the splash with home.
@@ -81,18 +82,27 @@ class _SplashPageState extends State<SplashPage>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Transform.scale(
-                      scale: _logoScale,
-                      child: Opacity(
-                        opacity: _logoOpacity,
-                        child: _GlowingLogo(
-                          glowStrength: _glowStrength,
-                          child: Image.asset(
-                            SplashPage.logoAsset,
-                            key: const Key('app_logo'),
-                            width: 168,
-                            height: 168,
-                            filterQuality: FilterQuality.high,
+                    Transform.translate(
+                      offset: Offset(0, _logoFloat),
+                      child: Transform.rotate(
+                        angle: _logoRotation,
+                        child: Transform.scale(
+                          scale: _logoScale,
+                          child: Opacity(
+                            opacity: _logoOpacity,
+                            child: _GlowingLogo(
+                              glowStrength: _glowStrength,
+                              child: _ShimmerLogo(
+                                progress: _shimmerProgress,
+                                child: Image.asset(
+                                  SplashPage.logoAsset,
+                                  key: const Key('app_logo'),
+                                  width: 176,
+                                  height: 176,
+                                  filterQuality: FilterQuality.high,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -101,7 +111,7 @@ class _SplashPageState extends State<SplashPage>
                     Opacity(
                       opacity: _titleOpacity,
                       child: Transform.translate(
-                        offset: Offset(0, (1 - _titleOpacity) * 12),
+                        offset: Offset(0, (1 - _titleOpacity) * 14),
                         child: Text(
                           context.l10n.appTitle,
                           textAlign: TextAlign.center,
@@ -127,18 +137,33 @@ class _SplashPageState extends State<SplashPage>
 
   double get _t => _controller.value;
 
-  double get _logoOpacity => _interval(0, 0.32, Curves.easeOut);
+  double get _logoOpacity => _interval(0, 0.22, Curves.easeOut);
 
-  double get _logoScale =>
-      0.86 + 0.14 * _interval(0, 0.42, Curves.easeOutCubic);
+  double get _logoScale {
+    final pop = _interval(0, 0.38, Curves.easeOutBack);
+    return 0.42 + 0.58 * pop;
+  }
 
-  double get _titleOpacity => _interval(0.28, 0.52, Curves.easeOut);
+  double get _logoRotation => (1 - _logoOpacity) * -0.14;
 
-  double get _exitOpacity => 1 - _interval(0.82, 1, Curves.easeIn);
+  double get _logoFloat {
+    final hold = _interval(0.38, 0.82, Curves.linear);
+    if (hold <= 0) {
+      return (1 - _logoOpacity) * 18;
+    }
+    return math.sin(hold * math.pi * 2) * 5;
+  }
+
+  double get _shimmerProgress => _interval(0.18, 0.52, Curves.easeInOut);
+
+  double get _titleOpacity => _interval(0.32, 0.52, Curves.easeOut);
+
+  double get _exitOpacity => 1 - _interval(0.84, 1, Curves.easeIn);
 
   double get _glowStrength {
-    final window = _interval(0.12, 0.78, Curves.linear);
-    return 0.5 + 0.5 * math.sin(window * math.pi);
+    final entrance = _interval(0.08, 0.36, Curves.easeOut);
+    final pulse = _interval(0.36, 0.82, Curves.linear);
+    return entrance * 0.7 + 0.3 * (0.5 + 0.5 * math.sin(pulse * math.pi * 2));
   }
 
   double _interval(double start, double end, Curve curve) {
@@ -165,13 +190,45 @@ class _GlowingLogo extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: _splashGlow.withValues(
-              alpha: 0.12 + 0.22 * glowStrength,
+              alpha: 0.1 + 0.32 * glowStrength,
             ),
-            blurRadius: 28 + 20 * glowStrength,
-            spreadRadius: 2,
+            blurRadius: 24 + 28 * glowStrength,
+            spreadRadius: 1 + 4 * glowStrength,
           ),
         ],
       ),
+      child: child,
+    );
+  }
+}
+
+/// A diagonal glass highlight that sweeps once across the logo.
+class _ShimmerLogo extends StatelessWidget {
+  const _ShimmerLogo({required this.progress, required this.child});
+
+  final double progress;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (progress <= 0 || progress >= 1) {
+      return child;
+    }
+    final slide = -1.3 + 2.6 * progress;
+    return ShaderMask(
+      blendMode: BlendMode.srcATop,
+      shaderCallback: (bounds) {
+        return LinearGradient(
+          begin: Alignment(slide - 0.35, -1),
+          end: Alignment(slide + 0.35, 1),
+          colors: [
+            const Color(0x00FFFFFF),
+            Colors.white.withValues(alpha: 0.55),
+            const Color(0x00FFFFFF),
+          ],
+          stops: const [0.28, 0.5, 0.72],
+        ).createShader(bounds);
+      },
       child: child,
     );
   }

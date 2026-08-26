@@ -12,6 +12,7 @@ void main() {
       await tester.pumpApp(const SplashPage());
 
       expect(find.byKey(const Key('app_logo')), findsOneWidget);
+      expect(find.byType(Transform), findsWidgets);
       expect(find.byIcon(Icons.thermostat), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
