@@ -154,8 +154,10 @@ class _Content extends StatelessWidget {
             horizontalPadding,
             14,
             horizontalPadding,
-            // Room for the floating nav bar the app shell overlays.
-            110,
+            // Clear the floating nav bar the app shell overlays: its own
+            // height plus its bottom offset plus the system gesture inset,
+            // so the last card can always be scrolled clear of it.
+            124 + MediaQuery.viewPaddingOf(context).bottom,
           ),
           children: [
             WeatherTopBar(

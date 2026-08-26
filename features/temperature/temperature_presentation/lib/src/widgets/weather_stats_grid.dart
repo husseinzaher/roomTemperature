@@ -78,7 +78,7 @@ class WeatherStatsGrid extends StatelessWidget {
             (constraints.maxWidth - spacing * (columns - 1)) / columns;
         // Slightly taller than wide, matching the reference proportions,
         // but derived from the measured width so it adapts to any screen.
-        final tileHeight = (tileWidth * 1.22).clamp(112.0, 150.0);
+        final tileHeight = (tileWidth * 1.34).clamp(126.0, 168.0);
 
         return Wrap(
           spacing: spacing,

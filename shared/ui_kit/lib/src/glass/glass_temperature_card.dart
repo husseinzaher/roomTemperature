@@ -88,36 +88,42 @@ class _Reading extends StatelessWidget {
     return FittedBox(
       fit: BoxFit.scaleDown,
       alignment: AlignmentDirectional.centerEnd,
-      child: Row(
-        textBaseline: TextBaseline.alphabetic,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            maxLines: 1,
-            style: const TextStyle(
-              color: GlassTokens.onGlass,
-              fontSize: 82,
-              fontWeight: FontWeight.w200,
-              height: 0.95,
-              letterSpacing: -1,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
-          const SizedBox(width: 4),
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              unit,
+      // A measurement reads left-to-right in every locale: forcing LTR here
+      // keeps "20.4 °C" from being reordered to "C° 20.4" under RTL, where
+      // the degree sign is bidi-neutral and would otherwise flip.
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Row(
+          textBaseline: TextBaseline.alphabetic,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              maxLines: 1,
               style: const TextStyle(
                 color: GlassTokens.onGlass,
-                fontSize: 30,
-                fontWeight: FontWeight.w300,
-                height: 1,
+                fontSize: 82,
+                fontWeight: FontWeight.w200,
+                height: 0.95,
+                letterSpacing: -1,
+                fontFeatures: [FontFeature.tabularFigures()],
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 4),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                unit,
+                style: const TextStyle(
+                  color: GlassTokens.onGlass,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w300,
+                  height: 1,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

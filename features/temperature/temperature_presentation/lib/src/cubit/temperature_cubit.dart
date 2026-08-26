@@ -107,12 +107,21 @@ class TemperatureCubit extends Cubit<TemperatureState> {
         );
       }
 
-      await _temperatureRepository.recordReading(
-        userId: userId,
-        reading: reading,
-      );
-
+      // Show the fresh reading regardless of whether it persists: storage
+      // is a cache for the next cold start, not a precondition for
+      // displaying data we already hold. Losing a whole refresh because
+      // the backend rejected the write would be the wrong trade.
       emit(TemperatureState.loaded(reading: reading, weather: weather));
+
+      try {
+        await _temperatureRepository.recordReading(
+          userId: userId,
+          reading: reading,
+        );
+      } on Exception {
+        // Deliberately swallowed — the reading is already on screen, and
+        // the history feature surfaces its own persistence errors.
+      }
     } on Exception catch (error) {
       emit(
         TemperatureState.error(

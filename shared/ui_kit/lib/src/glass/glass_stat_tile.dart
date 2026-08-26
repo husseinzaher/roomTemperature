@@ -33,36 +33,43 @@ class GlassStatTile extends StatelessWidget {
       blur: GlassTokens.blurSmall,
       radius: GlassTokens.radiusSmall,
       tint: GlassTokens.tintStrong,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(height: 38, child: Center(child: icon)),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: GlassTokens.onGlassMuted,
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-              height: 1.1,
+          SizedBox(height: 34, child: Center(child: icon)),
+          const SizedBox(height: 8),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: GlassTokens.onGlassMuted,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w400,
+                height: 1.15,
+              ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              maxLines: 1,
-              style: const TextStyle(
-                color: GlassTokens.onGlass,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                height: 1.1,
-                fontFeatures: [FontFeature.tabularFigures()],
+            // Measurements read left-to-right in every locale — see the note
+            // in GlassTemperatureCard.
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: const TextStyle(
+                  color: GlassTokens.onGlass,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  height: 1.1,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
             ),
           ),
