@@ -94,7 +94,7 @@ object RoomTempWidgetViews {
         val clickableIds = sharedClickableIds.toMutableList()
         if (layoutId == R.layout.room_temp_widget) {
             bindDashboard(views, widgetData)
-            clickableIds.addAll(dashboardClickableIds)
+            clickableIds.addAll(dashboardClickableIds.toList())
         }
 
         bindLaunchApp(context, views, widgetId, clickableIds)
