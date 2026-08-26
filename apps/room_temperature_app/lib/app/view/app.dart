@@ -115,6 +115,11 @@ class _AppViewState extends State<_AppView> {
     _authSubscription = _authStatusCubit.stream.listen((user) {
       _authStateKnown = true;
       unawaited(_handleAuthChange(user));
+      // GoRouterRefreshStream's own listener on this same stream may have
+      // already re-run redirect() before _authStateKnown flipped above (the
+      // two listeners race), and nothing else prompts another check — so
+      // explicitly refresh once the flag is actually true.
+      _router.refresh();
     });
   }
 
