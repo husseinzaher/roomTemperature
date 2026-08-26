@@ -16,6 +16,18 @@ void main() {
     const estimator = RoomTemperatureEstimator();
     const location = Location(latitude: 25, longitude: 55);
 
+    OutsideWeather weatherAt(double celsius) => OutsideWeather(
+      temperatureCelsius: celsius,
+      condition: WeatherCondition.clear,
+      isDay: true,
+      apparentTemperatureCelsius: celsius - 1,
+      relativeHumidityPercent: 40,
+      windSpeedKph: 12,
+      surfacePressureHpa: 1010,
+      uvIndex: 3,
+      sunset: DateTime(2026, 8, 26, 19, 26),
+    );
+
     final cachedReading = Reading(
       roomTemperatureCelsius: 22,
       roomTemperatureSource: RoomTemperatureSource.estimated,
@@ -75,10 +87,10 @@ void main() {
       build: () => buildCubit(readAmbientSensor: () async => 25.5),
       setUp: () {
         when(
-          () => weatherRepository.fetchOutsideTemperatureCelsius(
+          () => weatherRepository.fetchOutsideWeather(
             location: location,
           ),
-        ).thenAnswer((_) async => 30);
+        ).thenAnswer((_) async => weatherAt(30));
       },
       act: (cubit) => cubit.refresh(),
       expect: () => [
@@ -127,10 +139,10 @@ void main() {
       build: buildCubit,
       setUp: () {
         when(
-          () => weatherRepository.fetchOutsideTemperatureCelsius(
+          () => weatherRepository.fetchOutsideWeather(
             location: location,
           ),
-        ).thenAnswer((_) async => 20);
+        ).thenAnswer((_) async => weatherAt(20));
       },
       act: (cubit) => cubit.refresh(),
       expect: () => [
@@ -159,10 +171,10 @@ void main() {
       build: () => buildCubit(readAmbientSensor: () async => null),
       setUp: () {
         when(
-          () => weatherRepository.fetchOutsideTemperatureCelsius(
+          () => weatherRepository.fetchOutsideWeather(
             location: location,
           ),
-        ).thenAnswer((_) async => 18);
+        ).thenAnswer((_) async => weatherAt(18));
       },
       act: (cubit) => cubit.refresh(),
       expect: () => [
@@ -191,7 +203,7 @@ void main() {
       build: buildCubit,
       setUp: () {
         when(
-          () => weatherRepository.fetchOutsideTemperatureCelsius(
+          () => weatherRepository.fetchOutsideWeather(
             location: location,
           ),
         ).thenThrow(Exception('network down'));
@@ -214,7 +226,7 @@ void main() {
       build: () => buildCubit(watchStream: Stream.value(cachedReading)),
       setUp: () {
         when(
-          () => weatherRepository.fetchOutsideTemperatureCelsius(
+          () => weatherRepository.fetchOutsideWeather(
             location: location,
           ),
         ).thenThrow(Exception('network down'));

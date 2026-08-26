@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:app_localization/app_localization.dart';
-import 'package:auth_domain/auth_domain.dart';
 import 'package:auth_presentation/auth_presentation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,11 +13,12 @@ import 'package:settings_domain/settings_domain.dart';
 import 'package:settings_presentation/settings_presentation.dart';
 import 'package:temperature_domain/temperature_domain.dart';
 import 'package:temperature_presentation/temperature_presentation.dart';
+import 'package:ui_kit/ui_kit.dart';
 
-/// The signed-in app shell: a bottom-navigation scaffold over the
-/// dashboard, history, and settings tabs, wiring the settings, temperature,
-/// history, and (headless) notification-threshold features together for
-/// the current user.
+/// The signed-in app shell: the dashboard, history, and settings tabs behind
+/// a floating glass navigation bar, wiring the settings, temperature,
+/// history, and (headless) notification-threshold features together for the
+/// current user.
 class HomeShellPage extends StatelessWidget {
   /// Creates a [HomeShellPage].
   const HomeShellPage({super.key});
@@ -77,67 +77,74 @@ class _HomeTabsView extends StatefulWidget {
 }
 
 class _HomeTabsViewState extends State<_HomeTabsView> {
-  int _index = 0;
+  static const _dashboardIndex = 0;
+
+  int _index = _dashboardIndex;
+
+  void _onUnitsChanged(Units units) {
+    final cubit = context.read<SettingsCubit>();
+    final current = cubit.state.settings;
+    if (current == null || current.units == units) return;
+    unawaited(cubit.save(current.copyWith(units: units)));
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final units =
+        context.watch<SettingsCubit>().state.settings?.units ?? Units.celsius;
 
     return BlocListener<TemperatureCubit, TemperatureState>(
-      listener: (context, state) {
-        final reading = state.reading;
-        if (reading == null) return;
-        final settings = context.read<SettingsCubit>().state.settings;
-        final threshold = settings?.threshold;
-        final breached =
-            threshold != null &&
-            threshold.enabled &&
-            (reading.roomTemperatureCelsius < threshold.minCelsius ||
-                reading.roomTemperatureCelsius > threshold.maxCelsius);
-
-        unawaited(
-          context.read<HomeWidgetBridge>().updateReading(
-            roomTemperatureCelsius: reading.roomTemperatureCelsius,
-            outsideTemperatureCelsius: reading.outsideTemperatureCelsius,
-            isEstimatedRoomTemperature: reading.isEstimated,
-            thresholdBreached: breached,
-            updatedAt: reading.timestamp,
-          ),
-        );
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(_titleFor(_index, l10n)),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: l10n.logout,
-              onPressed: () => context.read<SignOutCommand>().execute(),
+      listener: _pushReadingToHomeWidget,
+      // Transparent Material so text in the floating nav bar resolves a
+      // Material ancestor (without one, Flutter paints a debug underline
+      // under every label) while the backdrop still shows through.
+      child: Material(
+        type: MaterialType.transparency,
+        child: Stack(
+          children: [
+            // Each tab paints its own full-bleed background, so the tab body
+            // fills the whole window rather than sitting inside a Scaffold
+            // that reserves space for a bottom bar.
+            Positioned.fill(
+              child: IndexedStack(
+                index: _index,
+                children: [
+                  DashboardPage(
+                    units: units,
+                    onUnitsChanged: _onUnitsChanged,
+                    onOpenSettings: () => setState(() => _index = 2),
+                  ),
+                  const _TabScaffold(child: HistoryPage()),
+                  const _TabScaffold(child: SettingsPage()),
+                ],
+              ),
             ),
-          ],
-        ),
-        body: IndexedStack(
-          index: _index,
-          children: const [DashboardPage(), HistoryPage(), SettingsPage()],
-        ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _index,
-          onDestinationSelected: (index) => setState(() => _index = index),
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.dashboard_outlined),
-              selectedIcon: const Icon(Icons.dashboard),
-              label: l10n.dashboard,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.history_outlined),
-              selectedIcon: const Icon(Icons.history),
-              label: l10n.history,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.settings_outlined),
-              selectedIcon: const Icon(Icons.settings),
-              label: l10n.settings,
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16 + MediaQuery.viewPaddingOf(context).bottom,
+              child: GlassNavBar(
+                selectedIndex: _index,
+                onSelected: (index) => setState(() => _index = index),
+                items: [
+                  GlassNavItem(
+                    icon: Icons.dashboard_outlined,
+                    selectedIcon: Icons.dashboard,
+                    label: l10n.dashboard,
+                  ),
+                  GlassNavItem(
+                    icon: Icons.history_outlined,
+                    selectedIcon: Icons.history,
+                    label: l10n.history,
+                  ),
+                  GlassNavItem(
+                    icon: Icons.settings_outlined,
+                    selectedIcon: Icons.settings,
+                    label: l10n.settings,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -145,14 +152,52 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
     );
   }
 
-  String _titleFor(int index, AppLocalizations l10n) {
-    switch (index) {
-      case 1:
-        return l10n.history;
-      case 2:
-        return l10n.settings;
-      default:
-        return l10n.dashboard;
-    }
+  void _pushReadingToHomeWidget(
+    BuildContext context,
+    TemperatureState state,
+  ) {
+    final reading = state.reading;
+    if (reading == null) return;
+
+    final threshold = context.read<SettingsCubit>().state.settings?.threshold;
+    final breached =
+        threshold != null &&
+        threshold.enabled &&
+        (reading.roomTemperatureCelsius < threshold.minCelsius ||
+            reading.roomTemperatureCelsius > threshold.maxCelsius);
+
+    unawaited(
+      context.read<HomeWidgetBridge>().updateReading(
+        roomTemperatureCelsius: reading.roomTemperatureCelsius,
+        outsideTemperatureCelsius: reading.outsideTemperatureCelsius,
+        isEstimatedRoomTemperature: reading.isEstimated,
+        thresholdBreached: breached,
+        updatedAt: reading.timestamp,
+      ),
+    );
+  }
+}
+
+/// Wraps the history and settings tabs — which are still conventional
+/// Material screens — so they get the app's dark ground and leave room for
+/// the floating nav bar.
+class _TabScaffold extends StatelessWidget {
+  const _TabScaffold({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return WeatherBackdrop(
+      mood: BackdropMood.overcast,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 92),
+        child: MediaQuery.removePadding(
+          context: context,
+          removeBottom: true,
+          child: child,
+        ),
+      ),
+    );
   }
 }

@@ -164,4 +164,54 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get belowThreshold => 'أقل من الحد المسموح';
+
+  @override
+  String get inside => 'الداخل';
+
+  @override
+  String get outside => 'الخارج';
+
+  @override
+  String get insideHelp => 'كيف تعمل قراءة الداخل';
+
+  @override
+  String get outsideHelp => 'عن أحوال الطقس بالخارج';
+
+  @override
+  String get feelsLike => 'الإحساس الفعلي';
+
+  @override
+  String get humidity => 'الرطوبة';
+
+  @override
+  String get windSpeed => 'سرعة الرياح';
+
+  @override
+  String get pressure => 'الضغط الجوي';
+
+  @override
+  String get sunset => 'الغروب';
+
+  @override
+  String get uvIndex => 'الأشعة فوق البنفسجية';
+
+  @override
+  String get fiveDayForecast => 'توقعات ٥ أيام';
+
+  @override
+  String get airQualityMeter => 'مقياس جودة الهواء';
+
+  @override
+  String get weatherRadar => 'رادار الطقس';
+
+  @override
+  String get insideHelpBody =>
+      'معظم الهواتف لا تحتوي على مستشعر لدرجة حرارة المحيط، لذا تُقدَّر قراءة الداخل من درجة الحرارة بالخارج مضافًا إليها فرق الحرارة الداخلي. اضبط هذا الفرق من الإعدادات بالمقارنة مع ميزان حرارة حقيقي. وإذا كان جهازك يحتوي على مستشعر، تُستخدم قراءته مباشرة مع وسم «مستشعر».';
+
+  @override
+  String get outsideHelpBody =>
+      'تُجلب أحوال الطقس بالخارج من Open-Meteo حسب موقعك الحالي، وتُحدَّث عند السحب للأسفل أو الضغط على زر التحديث.';
+
+  @override
+  String get close => 'إغلاق';
 }

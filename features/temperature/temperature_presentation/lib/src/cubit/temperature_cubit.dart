@@ -49,7 +49,10 @@ class TemperatureCubit extends Cubit<TemperatureState> {
     if (reading == null) {
       return;
     }
-    emit(TemperatureState.loaded(reading: reading));
+    // Preserve any weather detail already fetched this session: only the two
+    // temperatures round-trip through storage, so a stored reading arriving
+    // here must not blank out the stat grid.
+    emit(TemperatureState.loaded(reading: reading, weather: state.weather));
   }
 
   void _onWatchError(Object error) {
@@ -57,6 +60,7 @@ class TemperatureCubit extends Cubit<TemperatureState> {
       TemperatureState.error(
         errorMessage: error.toString(),
         reading: state.reading,
+        weather: state.weather,
       ),
     );
   }
@@ -71,13 +75,15 @@ class TemperatureCubit extends Cubit<TemperatureState> {
   /// but this emits directly first so the UI updates without waiting on
   /// that round trip.
   Future<void> refresh() async {
-    emit(TemperatureState.loading(reading: state.reading));
+    emit(
+      TemperatureState.loading(reading: state.reading, weather: state.weather),
+    );
     try {
       final location = await _getLocation();
-      final outsideTemperatureCelsius = await _weatherRepository
-          .fetchOutsideTemperatureCelsius(
-            location: location,
-          );
+      final weather = await _weatherRepository.fetchOutsideWeather(
+        location: location,
+      );
+      final outsideTemperatureCelsius = weather.temperatureCelsius;
       final sensorTemperatureCelsius = await _readAmbientSensor?.call();
 
       final Reading reading;
@@ -106,12 +112,13 @@ class TemperatureCubit extends Cubit<TemperatureState> {
         reading: reading,
       );
 
-      emit(TemperatureState.loaded(reading: reading));
+      emit(TemperatureState.loaded(reading: reading, weather: weather));
     } on Exception catch (error) {
       emit(
         TemperatureState.error(
           errorMessage: error.toString(),
           reading: state.reading,
+          weather: state.weather,
         ),
       );
     }

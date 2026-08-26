@@ -164,4 +164,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get belowThreshold => 'Below threshold';
+
+  @override
+  String get inside => 'INSIDE';
+
+  @override
+  String get outside => 'OUTSIDE';
+
+  @override
+  String get insideHelp => 'How the indoor reading works';
+
+  @override
+  String get outsideHelp => 'About the outdoor conditions';
+
+  @override
+  String get feelsLike => 'Feels like';
+
+  @override
+  String get humidity => 'Humidity';
+
+  @override
+  String get windSpeed => 'Wind Speed';
+
+  @override
+  String get pressure => 'Pressure';
+
+  @override
+  String get sunset => 'Sunset';
+
+  @override
+  String get uvIndex => 'UV Index';
+
+  @override
+  String get fiveDayForecast => '5-Day Forecast';
+
+  @override
+  String get airQualityMeter => 'Air Quality Meter';
+
+  @override
+  String get weatherRadar => 'Weather Radar';
+
+  @override
+  String get insideHelpBody =>
+      'Most phones have no ambient-temperature sensor, so the indoor reading is estimated from the outdoor temperature plus your indoor offset. Calibrate the offset in Settings against a real thermometer. When your device does have a sensor, the reading is used directly and labelled Sensor.';
+
+  @override
+  String get outsideHelpBody =>
+      'Outdoor conditions come from Open-Meteo for your current location, and refresh when you pull down or tap refresh.';
+
+  @override
+  String get close => 'Close';
 }

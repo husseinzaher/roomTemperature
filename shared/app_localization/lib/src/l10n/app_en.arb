@@ -48,5 +48,21 @@
   "thresholdExceededBody": "The temperature reached {temp}°, which is outside the configured range.",
   "normal": "Normal",
   "aboveThreshold": "Above threshold",
-  "belowThreshold": "Below threshold"
+  "belowThreshold": "Below threshold",
+  "inside": "INSIDE",
+  "outside": "OUTSIDE",
+  "insideHelp": "How the indoor reading works",
+  "outsideHelp": "About the outdoor conditions",
+  "feelsLike": "Feels like",
+  "humidity": "Humidity",
+  "windSpeed": "Wind Speed",
+  "pressure": "Pressure",
+  "sunset": "Sunset",
+  "uvIndex": "UV Index",
+  "fiveDayForecast": "5-Day Forecast",
+  "airQualityMeter": "Air Quality Meter",
+  "weatherRadar": "Weather Radar",
+  "insideHelpBody": "Most phones have no ambient-temperature sensor, so the indoor reading is estimated from the outdoor temperature plus your indoor offset. Calibrate the offset in Settings against a real thermometer. When your device does have a sensor, the reading is used directly and labelled Sensor.",
+  "outsideHelpBody": "Outdoor conditions come from Open-Meteo for your current location, and refresh when you pull down or tap refresh.",
+  "close": "Close"
 }

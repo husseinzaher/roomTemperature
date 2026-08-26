@@ -73,3 +73,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    # Weather backdrops. The directory ships with only a README today —
+    # WeatherBackdrop falls back to a gradient per condition until real
+    # photographs are dropped in. See the README for filenames.
+    - assets/backgrounds/

@@ -202,5 +202,69 @@
   "belowThreshold": "أقل من الحد المسموح",
   "@belowThreshold": {
     "description": "Status label indicating a reading is below the configured threshold."
+  },
+  "inside": "الداخل",
+  "@inside": {
+    "description": "Section header for the indoor temperature section"
+  },
+  "outside": "الخارج",
+  "@outside": {
+    "description": "Section header for the outdoor weather section"
+  },
+  "insideHelp": "كيف تعمل قراءة الداخل",
+  "@insideHelp": {
+    "description": "Accessibility label for the indoor section help button"
+  },
+  "outsideHelp": "عن أحوال الطقس بالخارج",
+  "@outsideHelp": {
+    "description": "Accessibility label for the outdoor section help button"
+  },
+  "feelsLike": "الإحساس الفعلي",
+  "@feelsLike": {
+    "description": "Label for the apparent temperature stat tile"
+  },
+  "humidity": "الرطوبة",
+  "@humidity": {
+    "description": "Label for the relative humidity stat tile"
+  },
+  "windSpeed": "سرعة الرياح",
+  "@windSpeed": {
+    "description": "Label for the wind speed stat tile"
+  },
+  "pressure": "الضغط الجوي",
+  "@pressure": {
+    "description": "Label for the surface pressure stat tile"
+  },
+  "sunset": "الغروب",
+  "@sunset": {
+    "description": "Label for the sunset time stat tile"
+  },
+  "uvIndex": "الأشعة فوق البنفسجية",
+  "@uvIndex": {
+    "description": "Label for the UV index stat tile"
+  },
+  "fiveDayForecast": "توقعات ٥ أيام",
+  "@fiveDayForecast": {
+    "description": "Title of the five day forecast row"
+  },
+  "airQualityMeter": "مقياس جودة الهواء",
+  "@airQualityMeter": {
+    "description": "Title of the air quality row"
+  },
+  "weatherRadar": "رادار الطقس",
+  "@weatherRadar": {
+    "description": "Title of the weather radar row"
+  },
+  "insideHelpBody": "معظم الهواتف لا تحتوي على مستشعر لدرجة حرارة المحيط، لذا تُقدَّر قراءة الداخل من درجة الحرارة بالخارج مضافًا إليها فرق الحرارة الداخلي. اضبط هذا الفرق من الإعدادات بالمقارنة مع ميزان حرارة حقيقي. وإذا كان جهازك يحتوي على مستشعر، تُستخدم قراءته مباشرة مع وسم «مستشعر».",
+  "@insideHelpBody": {
+    "description": "Explanation shown when the indoor help button is tapped"
+  },
+  "outsideHelpBody": "تُجلب أحوال الطقس بالخارج من Open-Meteo حسب موقعك الحالي، وتُحدَّث عند السحب للأسفل أو الضغط على زر التحديث.",
+  "@outsideHelpBody": {
+    "description": "Explanation shown when the outdoor help button is tapped"
+  },
+  "close": "إغلاق",
+  "@close": {
+    "description": "Label for a button that dismisses a dialog"
   }
 }

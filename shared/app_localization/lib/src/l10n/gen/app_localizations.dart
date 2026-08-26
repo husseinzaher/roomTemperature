@@ -391,6 +391,102 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'أقل من الحد المسموح'**
   String get belowThreshold;
+
+  /// Section header for the indoor temperature section
+  ///
+  /// In ar, this message translates to:
+  /// **'الداخل'**
+  String get inside;
+
+  /// Section header for the outdoor weather section
+  ///
+  /// In ar, this message translates to:
+  /// **'الخارج'**
+  String get outside;
+
+  /// Accessibility label for the indoor section help button
+  ///
+  /// In ar, this message translates to:
+  /// **'كيف تعمل قراءة الداخل'**
+  String get insideHelp;
+
+  /// Accessibility label for the outdoor section help button
+  ///
+  /// In ar, this message translates to:
+  /// **'عن أحوال الطقس بالخارج'**
+  String get outsideHelp;
+
+  /// Label for the apparent temperature stat tile
+  ///
+  /// In ar, this message translates to:
+  /// **'الإحساس الفعلي'**
+  String get feelsLike;
+
+  /// Label for the relative humidity stat tile
+  ///
+  /// In ar, this message translates to:
+  /// **'الرطوبة'**
+  String get humidity;
+
+  /// Label for the wind speed stat tile
+  ///
+  /// In ar, this message translates to:
+  /// **'سرعة الرياح'**
+  String get windSpeed;
+
+  /// Label for the surface pressure stat tile
+  ///
+  /// In ar, this message translates to:
+  /// **'الضغط الجوي'**
+  String get pressure;
+
+  /// Label for the sunset time stat tile
+  ///
+  /// In ar, this message translates to:
+  /// **'الغروب'**
+  String get sunset;
+
+  /// Label for the UV index stat tile
+  ///
+  /// In ar, this message translates to:
+  /// **'الأشعة فوق البنفسجية'**
+  String get uvIndex;
+
+  /// Title of the five day forecast row
+  ///
+  /// In ar, this message translates to:
+  /// **'توقعات ٥ أيام'**
+  String get fiveDayForecast;
+
+  /// Title of the air quality row
+  ///
+  /// In ar, this message translates to:
+  /// **'مقياس جودة الهواء'**
+  String get airQualityMeter;
+
+  /// Title of the weather radar row
+  ///
+  /// In ar, this message translates to:
+  /// **'رادار الطقس'**
+  String get weatherRadar;
+
+  /// Explanation shown when the indoor help button is tapped
+  ///
+  /// In ar, this message translates to:
+  /// **'معظم الهواتف لا تحتوي على مستشعر لدرجة حرارة المحيط، لذا تُقدَّر قراءة الداخل من درجة الحرارة بالخارج مضافًا إليها فرق الحرارة الداخلي. اضبط هذا الفرق من الإعدادات بالمقارنة مع ميزان حرارة حقيقي. وإذا كان جهازك يحتوي على مستشعر، تُستخدم قراءته مباشرة مع وسم «مستشعر».'**
+  String get insideHelpBody;
+
+  /// Explanation shown when the outdoor help button is tapped
+  ///
+  /// In ar, this message translates to:
+  /// **'تُجلب أحوال الطقس بالخارج من Open-Meteo حسب موقعك الحالي، وتُحدَّث عند السحب للأسفل أو الضغط على زر التحديث.'**
+  String get outsideHelpBody;
+
+  /// Label for a button that dismisses a dialog
+  ///
+  /// In ar, this message translates to:
+  /// **'إغلاق'**
+  String get close;
 }
 
 class _AppLocalizationsDelegate
