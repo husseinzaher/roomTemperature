@@ -28,8 +28,7 @@ class SettingsModule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          SettingsCubit(settingsRepository: settingsRepository),
+      create: (_) => SettingsCubit(settingsRepository: settingsRepository),
       child: child,
     );
   }

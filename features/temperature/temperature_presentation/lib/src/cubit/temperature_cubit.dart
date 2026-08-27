@@ -7,13 +7,9 @@ import 'package:temperature_presentation/src/cubit/temperature_state.dart';
 /// {@template temperature_cubit}
 /// Loads, refreshes, and streams the latest [Reading].
 ///
-/// This cubit is deliberately ignorant of *how* the device location and the
-/// user's indoor offset are obtained — those are injected as closures
-/// ([_getLocation], [_getIndoorOffset]) so this package never needs to
-/// depend on a settings or location feature. When
-/// [_resolveIndoorTemperature] is provided, that resolver owns indoor
-/// source selection. [_readAmbientSensor] remains a test/legacy fallback
-/// used only when no resolver is injected.
+/// Indoor and outdoor paths are independent: a weather/location failure
+/// must not block a local indoor estimate, and indoor resolution never
+/// requires a network.
 /// {@endtemplate}
 class TemperatureCubit extends Cubit<TemperatureState> {
   /// {@macro temperature_cubit}
@@ -39,8 +35,7 @@ class TemperatureCubit extends Cubit<TemperatureState> {
   final Future<Location> Function() _getLocation;
   final double Function() _getIndoorOffset;
   final Future<double?> Function()? _readAmbientSensor;
-  final Future<IndoorTemperatureReading?> Function(OutsideWeather weather)?
-  _resolveIndoorTemperature;
+  final Future<IndoorTemperatureReading?> Function()? _resolveIndoorTemperature;
 
   StreamSubscription<Reading?>? _subscription;
 
@@ -48,9 +43,6 @@ class TemperatureCubit extends Cubit<TemperatureState> {
     if (reading == null) {
       return;
     }
-    // Preserve any weather detail already fetched this session: only the two
-    // temperatures round-trip through storage, so a stored reading arriving
-    // here must not blank out the stat grid.
     emit(TemperatureState.loaded(reading: reading, weather: state.weather));
   }
 
@@ -64,88 +56,116 @@ class TemperatureCubit extends Cubit<TemperatureState> {
     );
   }
 
-  /// Fetches the real outside temperature, determines the room temperature
-  /// (from a real sensor if [_readAmbientSensor] resolves to a value,
-  /// otherwise estimated via [_estimator]), records the resulting [Reading],
-  /// and emits a loaded state immediately.
-  ///
-  /// The [_temperatureRepository]'s `watchLatestReading` stream will also
-  /// eventually emit the same reading once it round-trips through storage,
-  /// but this emits directly first so the UI updates without waiting on
-  /// that round trip.
+  /// Refreshes indoor (local) and outdoor (weather) independently.
   Future<void> refresh() async {
     emit(
       TemperatureState.loading(reading: state.reading, weather: state.weather),
     );
+
+    IndoorTemperatureReading? indoor;
+    Object? indoorError;
+    if (_resolveIndoorTemperature != null) {
+      try {
+        indoor = await _resolveIndoorTemperature();
+      } on Exception catch (error) {
+        indoorError = error;
+      }
+    }
+
+    OutsideWeather? weather;
+    Object? weatherError;
     try {
       final location = await _getLocation();
-      final weather = await _weatherRepository.fetchOutsideWeather(
+      weather = await _weatherRepository.fetchOutsideWeather(
         location: location,
       );
-      final outsideTemperatureCelsius = weather.temperatureCelsius;
+    } on Exception catch (error) {
+      weatherError = error;
+    }
 
-      final Reading reading;
-      final resolvedIndoorTemperature = await _resolveIndoorTemperature?.call(
-        weather,
-      );
-      if (resolvedIndoorTemperature != null) {
-        reading = Reading(
-          roomTemperatureCelsius: resolvedIndoorTemperature.celsius,
-          roomTemperatureSource: resolvedIndoorTemperature.source,
-          outsideTemperatureCelsius: outsideTemperatureCelsius,
-          timestamp: DateTime.now(),
-        );
-      } else if (_resolveIndoorTemperature != null) {
+    final outsideTemperatureCelsius =
+        weather?.temperatureCelsius ?? state.reading?.outsideTemperatureCelsius;
+
+    if (_resolveIndoorTemperature != null) {
+      if (indoor == null) {
+        if (weather != null) {
+          emit(
+            TemperatureState.sourceUnavailable(
+              reading: state.reading,
+              weather: weather,
+            ),
+          );
+          return;
+        }
         emit(
-          TemperatureState.sourceUnavailable(
+          TemperatureState.error(
+            errorMessage: (indoorError ?? weatherError).toString(),
             reading: state.reading,
-            weather: weather,
+            weather: state.weather,
           ),
         );
         return;
-      } else {
-        final sensorTemperatureCelsius = await _readAmbientSensor?.call();
-        if (sensorTemperatureCelsius != null) {
-          reading = Reading(
-            roomTemperatureCelsius: sensorTemperatureCelsius,
-            roomTemperatureSource: RoomTemperatureSource.ambientSensor,
-            outsideTemperatureCelsius: outsideTemperatureCelsius,
-            timestamp: DateTime.now(),
-          );
-        } else {
-          final estimatedRoomTemperatureCelsius = _estimator.estimate(
-            outsideTemperatureCelsius: outsideTemperatureCelsius,
-            indoorOffsetCelsius: _getIndoorOffset(),
-          );
-          reading = Reading(
-            roomTemperatureCelsius: estimatedRoomTemperatureCelsius,
-            roomTemperatureSource: RoomTemperatureSource.estimated,
-            outsideTemperatureCelsius: outsideTemperatureCelsius,
-            timestamp: DateTime.now(),
-          );
-        }
       }
 
-      // Show the fresh reading regardless of whether it persists: storage
-      // is a cache for the next cold start, not a precondition for
-      // displaying data we already hold. Losing a whole refresh because
-      // the backend rejected the write would be the wrong trade.
-      emit(TemperatureState.loaded(reading: reading, weather: weather));
+      final reading = Reading(
+        roomTemperatureCelsius: indoor.celsius,
+        roomTemperatureSource: indoor.source,
+        outsideTemperatureCelsius: outsideTemperatureCelsius,
+        timestamp: DateTime.now(),
+        indoorConfidence: indoor.confidence,
+      );
+      emit(
+        TemperatureState.loaded(
+          reading: reading,
+          weather: weather ?? state.weather,
+        ),
+      );
+      await _persist(reading);
+      return;
+    }
 
-      try {
-        await _temperatureRepository.recordReading(reading: reading);
-      } on Exception {
-        // Deliberately swallowed — the reading is already on screen, and
-        // the history feature surfaces its own persistence errors.
-      }
-    } on Exception catch (error) {
+    if (weather == null) {
       emit(
         TemperatureState.error(
-          errorMessage: error.toString(),
+          errorMessage: (weatherError ?? Exception('network down')).toString(),
           reading: state.reading,
           weather: state.weather,
         ),
       );
+      return;
+    }
+
+    final sensorTemperatureCelsius = await _readAmbientSensor?.call();
+    final Reading reading;
+    if (sensorTemperatureCelsius != null) {
+      reading = Reading(
+        roomTemperatureCelsius: sensorTemperatureCelsius,
+        roomTemperatureSource: RoomTemperatureSource.ambientSensor,
+        outsideTemperatureCelsius: weather.temperatureCelsius,
+        timestamp: DateTime.now(),
+      );
+    } else {
+      final estimatedRoomTemperatureCelsius = _estimator.estimate(
+        outsideTemperatureCelsius: weather.temperatureCelsius,
+        indoorOffsetCelsius: _getIndoorOffset(),
+      );
+      reading = Reading(
+        roomTemperatureCelsius: estimatedRoomTemperatureCelsius,
+        roomTemperatureSource: RoomTemperatureSource.estimated,
+        outsideTemperatureCelsius: weather.temperatureCelsius,
+        timestamp: DateTime.now(),
+      );
+    }
+
+    emit(TemperatureState.loaded(reading: reading, weather: weather));
+    await _persist(reading);
+  }
+
+  Future<void> _persist(Reading reading) async {
+    try {
+      await _temperatureRepository.recordReading(reading: reading);
+    } on Exception {
+      // Deliberately swallowed — the reading is already on screen.
     }
   }
 

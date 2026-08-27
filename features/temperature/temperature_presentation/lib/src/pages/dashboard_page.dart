@@ -101,19 +101,14 @@ class _DashboardViewState extends State<_DashboardView> {
         backgroundColor: Colors.transparent,
         body: SafeArea(
           bottom: false,
-          child: RefreshIndicator(
-            onRefresh: context.read<TemperatureCubit>().refresh,
-            backgroundColor: const Color(0xE6151B20),
-            color: GlassTokens.onGlass,
-            child: _Content(
-              state: state,
-              reading: reading,
-              weather: weather,
-              units: widget.units,
-              onUnitsChanged: widget.onUnitsChanged,
-              onOpenSettings: widget.onOpenSettings,
-              l10n: l10n,
-            ),
+          child: _Content(
+            state: state,
+            reading: reading,
+            weather: weather,
+            units: widget.units,
+            onUnitsChanged: widget.onUnitsChanged,
+            onOpenSettings: widget.onOpenSettings,
+            l10n: l10n,
           ),
         ),
       ),
@@ -192,8 +187,8 @@ class _Content extends StatelessWidget {
               const SizedBox(height: 14),
               GlassTemperatureCard(
                 icon: const WeatherIcon(WeatherIcons.indoor, size: 38),
-                value: WeatherFormat.temperatureValue(
-                  reading!.roomTemperatureCelsius,
+                value: _indoorDisplayValue(
+                  reading!,
                   units,
                 ),
                 unit: units.symbol,
@@ -222,10 +217,12 @@ class _Content extends StatelessWidget {
                   ),
                   size: 40,
                 ),
-                value: WeatherFormat.temperatureValue(
-                  reading!.outsideTemperatureCelsius,
-                  units,
-                ),
+                value: reading!.outsideTemperatureCelsius == null
+                    ? WeatherFormat.unavailable
+                    : WeatherFormat.temperatureValue(
+                        reading!.outsideTemperatureCelsius!,
+                        units,
+                      ),
                 unit: units.symbol,
                 trailingContent: WeatherStatsGrid(
                   weather: weather,
@@ -261,6 +258,19 @@ class _Content extends StatelessWidget {
         );
       },
     );
+  }
+
+  String _indoorDisplayValue(Reading reading, Units units) {
+    final converted = units.fromCelsius(reading.roomTemperatureCelsius);
+    final confidence = reading.indoorConfidence;
+    if (confidence == null || confidence >= 0.7) {
+      return converted.toStringAsFixed(1);
+    }
+    final rounded = converted.round().toString();
+    if (confidence < 0.45) {
+      return '≈$rounded';
+    }
+    return rounded;
   }
 
   IconData _sourceIcon(RoomTemperatureSource source) {

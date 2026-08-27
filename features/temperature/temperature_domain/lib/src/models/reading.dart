@@ -12,6 +12,7 @@ class Reading extends Equatable {
     required this.roomTemperatureSource,
     required this.outsideTemperatureCelsius,
     required this.timestamp,
+    this.indoorConfidence,
   });
 
   /// The room temperature in Celsius. This is either a real sensor reading
@@ -23,10 +24,16 @@ class Reading extends Equatable {
   final RoomTemperatureSource roomTemperatureSource;
 
   /// The real outside temperature in Celsius, fetched from a weather API.
-  final double outsideTemperatureCelsius;
+  ///
+  /// `null` when indoor was resolved locally and no outside reading is known
+  /// yet (airplane mode on a fresh install).
+  final double? outsideTemperatureCelsius;
 
   /// When this reading was taken.
   final DateTime timestamp;
+
+  /// Live indoor-estimate confidence. `null` for cached rows (not persisted).
+  final double? indoorConfidence;
 
   /// Whether the room temperature is an estimate rather than a direct
   /// sensor reading. The UI must clearly label estimated readings as such.
@@ -39,5 +46,6 @@ class Reading extends Equatable {
     roomTemperatureSource,
     outsideTemperatureCelsius,
     timestamp,
+    indoorConfidence,
   ];
 }

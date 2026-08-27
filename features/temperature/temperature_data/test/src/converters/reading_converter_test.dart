@@ -19,7 +19,10 @@ void main() {
       final reading = converter.fromRow(row);
 
       expect(reading.roomTemperatureCelsius, 22.5);
-      expect(reading.roomTemperatureSource, RoomTemperatureSource.ambientSensor);
+      expect(
+        reading.roomTemperatureSource,
+        RoomTemperatureSource.ambientSensor,
+      );
       expect(reading.outsideTemperatureCelsius, 18.25);
       expect(reading.timestamp, DateTime.utc(2026, 3, 7, 9, 30));
       expect(reading.timestamp.isUtc, isTrue);

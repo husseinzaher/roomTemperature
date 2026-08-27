@@ -30,7 +30,7 @@ class HomeWidgetSnapshot {
   /// [convertFromCelsius].
   factory HomeWidgetSnapshot.fromCelsius({
     required double roomTemperatureCelsius,
-    required double outsideTemperatureCelsius,
+    required double? outsideTemperatureCelsius,
     required double Function(double celsius) convertFromCelsius,
     required String unitSymbol,
     required String sourceLabel,
@@ -50,9 +50,11 @@ class HomeWidgetSnapshot {
       roomTemperature: convertFromCelsius(
         roomTemperatureCelsius,
       ).toStringAsFixed(1),
-      outsideTemperature: convertFromCelsius(
-        outsideTemperatureCelsius,
-      ).toStringAsFixed(1),
+      outsideTemperature: outsideTemperatureCelsius == null
+          ? '—'
+          : convertFromCelsius(
+              outsideTemperatureCelsius,
+            ).toStringAsFixed(1),
       unitSymbol: unitSymbol,
       sourceLabel: sourceLabel,
       thresholdBreached: thresholdBreached,

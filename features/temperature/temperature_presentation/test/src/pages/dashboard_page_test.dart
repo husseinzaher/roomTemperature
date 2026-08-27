@@ -273,5 +273,32 @@ void main() {
 
       expect(find.byIcon(Icons.location_on_outlined), findsNothing);
     });
+
+    testWidgets(
+      'keeps only the top-bar refresh action and has no floating refresh',
+      (tester) async {
+        when(
+          () => weatherRepository.fetchOutsideWeather(
+            location: any(named: 'location'),
+          ),
+        ).thenAnswer((_) async => weather);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.byType(RefreshIndicator), findsNothing);
+        expect(find.byType(FloatingActionButton), findsNothing);
+        expect(find.byIcon(Icons.refresh), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.refresh));
+        await tester.pump();
+
+        verify(
+          () => weatherRepository.fetchOutsideWeather(
+            location: any(named: 'location'),
+          ),
+        ).called(1);
+      },
+    );
   });
 }

@@ -115,6 +115,32 @@ class AppLocalizationsAr extends AppLocalizations {
       'تُستخدم هذه القيمة لمعايرة تقدير درجة حرارة الغرفة بشكل أدق.';
 
   @override
+  String get indoorCalibration => 'معايرة درجة الحرارة الداخلية';
+
+  @override
+  String get indoorCalibrationHint =>
+      'أدخل درجة حرارة الغرفة الفعلية من ميزان حرارة. المعايرة تتم بالكامل دون اتصال بالإنترنت.';
+
+  @override
+  String get indoorCurrentEstimate => 'التقدير الحالي';
+
+  @override
+  String get indoorReferenceTemperature => 'درجة حرارة الغرفة الفعلية';
+
+  @override
+  String get indoorCalibrate => 'معايرة';
+
+  @override
+  String get indoorResetCalibration => 'إعادة ضبط المعايرة';
+
+  @override
+  String get indoorCalibrationSaved => 'تم حفظ المعايرة محليًا.';
+
+  @override
+  String get indoorCalibrationWarning =>
+      'الجهاز مشحون أو ساخن. يمكن حفظ النقطة، لكن الدقة قد تنخفض.';
+
+  @override
   String get save => 'حفظ';
 
   @override
@@ -206,7 +232,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get insideHelpBody =>
-      'معظم الهواتف لا تحتوي على مستشعر لدرجة حرارة المحيط، لذا تُقدَّر قراءة الداخل من درجة الحرارة بالخارج مضافًا إليها فرق الحرارة الداخلي. اضبط هذا الفرق من الإعدادات بالمقارنة مع ميزان حرارة حقيقي. وإذا كان جهازك يحتوي على مستشعر، تُستخدم قراءته مباشرة مع وسم «مستشعر».';
+      'تُقدَّر درجة الحرارة الداخلية من مستشعرات الجهاز الحرارية على الهاتف، دون إنترنت أو موقع. عايرها من الإعدادات مقابل ميزان حرارة حقيقي. إذا وُجد مستشعر محيط أو مستشعر بلوتوث، تُستخدم قراءته مباشرة.';
 
   @override
   String get outsideHelpBody =>

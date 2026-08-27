@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app_localization/app_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:history_domain/history_domain.dart';
@@ -45,13 +46,11 @@ class _TemperatureAndHistoryScope extends StatelessWidget {
       getLocation: () => context.read<LocationService>().getCurrentLocation(),
       getIndoorOffset: () =>
           settingsCubit.state.settings?.indoorOffsetCelsius ?? 0,
-      resolveIndoorTemperature: (weather) {
+      resolveIndoorTemperature: () {
         final settings =
             settingsCubit.state.settings ?? UserSettings.defaults();
         return context.read<IndoorTemperatureService>().resolve(
           preference: settings.indoorTemperaturePreference,
-          weather: weather,
-          indoorOffsetCelsius: settings.indoorOffsetCelsius,
         );
       },
       child: HistoryModule(
@@ -137,6 +136,39 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
                               true,
                         };
                       },
+                      indoorCalibration: IndoorCalibrationHost(
+                        load: () async {
+                          final service = context
+                              .read<IndoorTemperatureService>();
+                          await service.resolve(
+                            preference: IndoorTemperaturePreference.estimated,
+                          );
+                          final estimate = service.lastEstimate;
+                          final profile = await service.thermalProvider?.store
+                              .loadProfile();
+                          return IndoorCalibrationView(
+                            estimateCelsius: estimate?.temperatureCelsius,
+                            confidence: estimate?.confidence,
+                            statusLabel:
+                                estimate?.debug.statusLabel ??
+                                'Learning baseline',
+                            hasCalibration: profile?.hasCalibration ?? false,
+                            debugText: kDebugMode
+                                ? service.lastDebug?.format()
+                                : null,
+                          );
+                        },
+                        calibrate: (actual) {
+                          return context
+                              .read<IndoorTemperatureService>()
+                              .calibrate(actualRoomCelsius: actual);
+                        },
+                        reset: () {
+                          return context
+                              .read<IndoorTemperatureService>()
+                              .resetCalibration();
+                        },
+                      ),
                     ),
                   ),
                 ],

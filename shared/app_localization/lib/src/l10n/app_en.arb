@@ -35,6 +35,14 @@
   "fahrenheit": "Fahrenheit",
   "indoorOffset": "Indoor calibration offset",
   "indoorOffsetHint": "Used to fine-tune the estimated room temperature.",
+  "indoorCalibration": "Indoor Temperature Calibration",
+  "indoorCalibrationHint": "Enter the actual room temperature from a thermometer. Calibration is stored locally and works completely offline.",
+  "indoorCurrentEstimate": "Current estimate",
+  "indoorReferenceTemperature": "Reference temperature",
+  "indoorCalibrate": "Calibrate",
+  "indoorResetCalibration": "Reset Calibration",
+  "indoorCalibrationSaved": "Calibration saved locally.",
+  "indoorCalibrationWarning": "The phone is charging or thermally stressed. You can still save this point, but it may be less accurate.",
   "save": "Save",
   "cancel": "Cancel",
   "retry": "Retry",
@@ -62,7 +70,7 @@
   "fiveDayForecast": "5-Day Forecast",
   "airQualityMeter": "Air Quality Meter",
   "weatherRadar": "Weather Radar",
-  "insideHelpBody": "Most phones have no ambient-temperature sensor, so the indoor reading is estimated from the outdoor temperature plus your indoor offset. Calibrate the offset in Settings against a real thermometer. When your device does have a sensor, the reading is used directly and labelled Sensor.",
+  "insideHelpBody": "Indoor temperature is estimated on-device from local thermal sensors, with no internet or location required. Calibrate it in Settings against a real thermometer. When the phone has an ambient or Bluetooth sensor, that reading is used directly.",
   "outsideHelpBody": "Outdoor conditions come from Open-Meteo for your current location, and refresh when you pull down or tap refresh.",
   "close": "Close"
 }

@@ -1,5 +1,7 @@
 import 'package:room_temperature_app/services/ambient_sensor_service.dart';
 import 'package:room_temperature_app/services/battery_temperature_service.dart';
+import 'package:room_temperature_app/services/indoor_estimator_store.dart';
+import 'package:room_temperature_app/services/thermal_data_service.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:temperature_domain/temperature_domain.dart';
 
@@ -20,7 +22,9 @@ abstract interface class IndoorTemperatureProvider {
 
 Stream<double> _oneShotStream(Future<double?> Function() read) async* {
   final value = await read();
-  if (value != null) yield value;
+  if (value != null) {
+    yield value;
+  }
 }
 
 /// Android ambient temperature provider (`Sensor.TYPE_AMBIENT_TEMPERATURE`).
@@ -93,23 +97,24 @@ class ManualTemperatureProvider implements IndoorTemperatureProvider {
       _oneShotStream(() async => _readManualCelsius());
 }
 
-/// Weather-derived estimate provider.
-class EstimatedTemperatureProvider implements IndoorTemperatureProvider {
-  /// Creates an estimated temperature provider.
-  const EstimatedTemperatureProvider({
-    required this.weather,
-    required this.indoorOffsetCelsius,
-    this.estimator = const RoomTemperatureEstimator(),
-  });
+/// Local offline thermal-estimator provider. Never uses weather or GPS.
+class ThermalEstimateProvider implements IndoorTemperatureProvider {
+  /// Creates a thermal-estimate provider.
+  ThermalEstimateProvider({
+    required ThermalDataService thermalData,
+    required this.store,
+    this.estimator = const IndoorTemperatureEstimator(),
+  }) : _thermalData = thermalData;
 
-  /// The outside weather used for the estimate.
-  final OutsideWeather weather;
+  final ThermalDataService _thermalData;
+  final IndoorEstimatorStore store;
+  final IndoorTemperatureEstimator estimator;
 
-  /// The user calibration offset.
-  final double indoorOffsetCelsius;
+  /// Last estimator result from this provider.
+  IndoorEstimateResult? lastResult;
 
-  /// The estimator.
-  final RoomTemperatureEstimator estimator;
+  /// Last thermal snapshot read from the device.
+  ThermalSnapshot? lastSnapshot;
 
   @override
   IndoorTemperatureSource get source => IndoorTemperatureSource.estimated;
@@ -118,63 +123,151 @@ class EstimatedTemperatureProvider implements IndoorTemperatureProvider {
   Future<bool> isAvailable() async => true;
 
   @override
-  Stream<double> get temperatureStream => _oneShotStream(() async {
-    return estimator.estimate(
-      outsideTemperatureCelsius: weather.temperatureCelsius,
-      indoorOffsetCelsius: indoorOffsetCelsius,
+  Stream<double> get temperatureStream async* {
+    final reading = await read();
+    if (reading != null) {
+      yield reading.celsius;
+    }
+  }
+
+  /// Runs one local estimate and persists estimator state.
+  Future<IndoorTemperatureReading?> read() async {
+    final snapshot = await _thermalData.readSnapshot();
+    lastSnapshot = snapshot;
+    if (snapshot == null) {
+      lastResult = null;
+      return null;
+    }
+    final state = await store.loadState();
+    final profile = await store.loadProfile();
+    final step = estimator.estimate(
+      snapshot: snapshot,
+      state: state,
+      profile: profile,
     );
-  });
+    await store.saveState(step.state);
+    if (step.profile != profile) {
+      await store.saveProfile(step.profile);
+    }
+    lastResult = step.result;
+    final result = step.result;
+    if (result == null) {
+      return null;
+    }
+    return IndoorTemperatureReading(
+      celsius: result.displayCelsius,
+      source: IndoorTemperatureSource.estimated,
+      confidence: result.confidence,
+      calibrationApplied: result.calibrationApplied,
+      debug: result.debug,
+    );
+  }
 }
 
 /// Resolves the active indoor-temperature source from user settings.
 ///
-/// Automatic priority:
+/// Automatic priority (all local, no network):
 /// 1. Android ambient temperature sensor
 /// 2. Bluetooth BLE temperature sensor
-/// 3. Battery temperature
+/// 3. Local thermal estimate
 /// 4. Manual temperature
-/// 5. Weather-based estimate
+///
+/// Battery temperature is never chosen automatically as room temperature.
 class IndoorTemperatureService {
   /// Creates an indoor-temperature service.
-  const IndoorTemperatureService({
-    required this._ambientProvider,
-    required this._bluetoothProvider,
-    required this._batteryProvider,
-    required this._manualProvider,
-  });
+  IndoorTemperatureService({
+    required IndoorTemperatureProvider ambientProvider,
+    required IndoorTemperatureProvider bluetoothProvider,
+    required IndoorTemperatureProvider batteryProvider,
+    required IndoorTemperatureProvider manualProvider,
+    required IndoorTemperatureProvider thermalProvider,
+  }) : _ambientProvider = ambientProvider,
+       _bluetoothProvider = bluetoothProvider,
+       _batteryProvider = batteryProvider,
+       _manualProvider = manualProvider,
+       _thermalProvider = thermalProvider,
+       _thermalEstimate = thermalProvider is ThermalEstimateProvider
+           ? thermalProvider
+           : null;
 
   final IndoorTemperatureProvider _ambientProvider;
   final IndoorTemperatureProvider _bluetoothProvider;
   final IndoorTemperatureProvider _batteryProvider;
   final IndoorTemperatureProvider _manualProvider;
+  final IndoorTemperatureProvider _thermalProvider;
+  final ThermalEstimateProvider? _thermalEstimate;
+
+  /// Records a manual room-temperature calibration against the last estimate.
+  Future<({bool saved, bool poorConditions})> calibrate({
+    required double actualRoomCelsius,
+  }) async {
+    var snapshot = _thermalEstimate?.lastSnapshot;
+    var current = _thermalEstimate?.lastResult;
+    if (snapshot == null || current == null) {
+      await _thermalEstimate?.read();
+      snapshot = _thermalEstimate?.lastSnapshot;
+      current = _thermalEstimate?.lastResult;
+    }
+    if (_thermalEstimate == null || snapshot == null || current == null) {
+      return (saved: false, poorConditions: false);
+    }
+    final profile = await _thermalEstimate.store.loadProfile();
+    final next = _thermalEstimate.estimator.recordManualCalibration(
+      profile: profile,
+      current: current,
+      snapshot: snapshot,
+      actualRoomCelsius: actualRoomCelsius,
+    );
+    await _thermalEstimate.store.saveProfile(next);
+    return (
+      saved: true,
+      poorConditions: next.points.isNotEmpty && next.points.last.poorConditions,
+    );
+  }
+
+  /// Clears stored calibration points.
+  Future<void> resetCalibration() async {
+    if (_thermalEstimate == null) {
+      return;
+    }
+    final profile = await _thermalEstimate.store.loadProfile();
+    final next = _thermalEstimate.estimator.resetCalibration(profile);
+    await _thermalEstimate.store.saveProfile(next);
+  }
+
+  /// Last estimator debug dump, when the thermal path ran.
+  IndoorEstimateDebug? get lastDebug => _thermalEstimate?.lastResult?.debug;
+
+  /// Last estimator result, when the thermal path ran.
+  IndoorEstimateResult? get lastEstimate => _thermalEstimate?.lastResult;
+
+  /// Last thermal snapshot, when one was read.
+  ThermalSnapshot? get lastSnapshot => _thermalEstimate?.lastSnapshot;
+
+  /// The thermal provider, for calibration.
+  ThermalEstimateProvider? get thermalProvider => _thermalEstimate;
 
   /// Resolves one reading using either the explicit preference or automatic
-  /// priority order.
+  /// priority order. Independent of weather / location / network.
   Future<IndoorTemperatureReading?> resolve({
     required IndoorTemperaturePreference preference,
-    required OutsideWeather weather,
-    required double indoorOffsetCelsius,
   }) async {
-    final estimatedProvider = EstimatedTemperatureProvider(
-      weather: weather,
-      indoorOffsetCelsius: indoorOffsetCelsius,
-    );
-
     if (preference == IndoorTemperaturePreference.automatic) {
       for (final provider in [
         _ambientProvider,
         _bluetoothProvider,
-        _batteryProvider,
+        _thermalProvider,
         _manualProvider,
-        estimatedProvider,
       ]) {
         final reading = await _readAvailable(provider);
-        if (reading != null) return reading;
+        if (reading != null) {
+          return reading;
+        }
       }
       return null;
     }
 
-    return _readAvailable(_providerFor(preference, estimatedProvider));
+    return _readAvailable(_providerFor(preference));
   }
 
   /// Returns a snapshot of source availability for settings UI.
@@ -194,9 +287,17 @@ class IndoorTemperatureService {
   Future<IndoorTemperatureReading?> _readAvailable(
     IndoorTemperatureProvider provider,
   ) async {
-    if (!await provider.isAvailable()) return null;
+    if (identical(provider, _thermalProvider) &&
+        provider is ThermalEstimateProvider) {
+      return provider.read();
+    }
+    if (!await provider.isAvailable()) {
+      return null;
+    }
     final values = await provider.temperatureStream.take(1).toList();
-    if (values.isEmpty) return null;
+    if (values.isEmpty) {
+      return null;
+    }
     return IndoorTemperatureReading(
       celsius: values.first,
       source: provider.source,
@@ -205,15 +306,14 @@ class IndoorTemperatureService {
 
   IndoorTemperatureProvider _providerFor(
     IndoorTemperaturePreference preference,
-    EstimatedTemperatureProvider estimatedProvider,
   ) {
     return switch (preference) {
-      IndoorTemperaturePreference.automatic => estimatedProvider,
+      IndoorTemperaturePreference.automatic => _thermalProvider,
       IndoorTemperaturePreference.ambientSensor => _ambientProvider,
       IndoorTemperaturePreference.bluetoothSensor => _bluetoothProvider,
       IndoorTemperaturePreference.batteryTemperature => _batteryProvider,
       IndoorTemperaturePreference.manual => _manualProvider,
-      IndoorTemperaturePreference.estimated => estimatedProvider,
+      IndoorTemperaturePreference.estimated => _thermalProvider,
     };
   }
 }

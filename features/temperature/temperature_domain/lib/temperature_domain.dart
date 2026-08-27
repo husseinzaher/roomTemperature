@@ -3,6 +3,11 @@ library;
 
 export 'src/commands/record_reading_command.dart';
 export 'src/estimator/room_temperature_estimator.dart';
+export 'src/indoor_estimator/battery_room_temperature.dart';
+export 'src/indoor_estimator/indoor_estimator_models.dart';
+export 'src/indoor_estimator/indoor_temperature_estimator.dart';
+export 'src/indoor_estimator/thermal_snapshot.dart';
+export 'src/indoor_estimator/thermal_zone_classifier.dart';
 export 'src/models/daily_forecast.dart';
 export 'src/models/indoor_temperature_reading.dart';
 export 'src/models/location.dart';

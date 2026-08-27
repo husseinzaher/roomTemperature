@@ -47,9 +47,8 @@ class TemperatureModule extends StatelessWidget {
   final Future<double?> Function()? readAmbientSensor;
 
   /// Resolves the active indoor temperature using app-level source
-  /// selection.
-  final Future<IndoorTemperatureReading?> Function(OutsideWeather weather)?
-  resolveIndoorTemperature;
+  /// selection. Independent of weather.
+  final Future<IndoorTemperatureReading?> Function()? resolveIndoorTemperature;
 
   /// The subtree that can access the provided [TemperatureCubit].
   final Widget child;

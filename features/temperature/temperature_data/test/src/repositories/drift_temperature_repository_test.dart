@@ -37,7 +37,10 @@ void main() {
     });
 
     test('a second reading supersedes the first', () async {
-      final older = readingAt(DateTime.utc(2026, 3, 7, 9), roomTemperatureC: 19);
+      final older = readingAt(
+        DateTime.utc(2026, 3, 7, 9),
+        roomTemperatureC: 19,
+      );
       final newer = readingAt(
         DateTime.utc(2026, 3, 7, 10),
         roomTemperatureC: 24,
@@ -55,7 +58,10 @@ void main() {
         DateTime.utc(2026, 3, 7, 10),
         roomTemperatureC: 24,
       );
-      final older = readingAt(DateTime.utc(2026, 3, 7, 9), roomTemperatureC: 19);
+      final older = readingAt(
+        DateTime.utc(2026, 3, 7, 9),
+        roomTemperatureC: 19,
+      );
 
       await repository.recordReading(reading: newer);
       await repository.recordReading(reading: older);

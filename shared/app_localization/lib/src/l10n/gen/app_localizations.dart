@@ -308,6 +308,54 @@ abstract class AppLocalizations {
   /// **'تُستخدم هذه القيمة لمعايرة تقدير درجة حرارة الغرفة بشكل أدق.'**
   String get indoorOffsetHint;
 
+  /// Title for the indoor temperature calibration section.
+  ///
+  /// In ar, this message translates to:
+  /// **'معايرة درجة الحرارة الداخلية'**
+  String get indoorCalibration;
+
+  /// Explanation that indoor calibration is fully offline.
+  ///
+  /// In ar, this message translates to:
+  /// **'أدخل درجة حرارة الغرفة الفعلية من ميزان حرارة. المعايرة تتم بالكامل دون اتصال بالإنترنت.'**
+  String get indoorCalibrationHint;
+
+  /// Label for the current indoor estimate.
+  ///
+  /// In ar, this message translates to:
+  /// **'التقدير الحالي'**
+  String get indoorCurrentEstimate;
+
+  /// Label for the reference room temperature field.
+  ///
+  /// In ar, this message translates to:
+  /// **'درجة حرارة الغرفة الفعلية'**
+  String get indoorReferenceTemperature;
+
+  /// Button label to save an indoor calibration point.
+  ///
+  /// In ar, this message translates to:
+  /// **'معايرة'**
+  String get indoorCalibrate;
+
+  /// Button label to clear indoor calibration.
+  ///
+  /// In ar, this message translates to:
+  /// **'إعادة ضبط المعايرة'**
+  String get indoorResetCalibration;
+
+  /// Confirmation after indoor calibration is stored.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم حفظ المعايرة محليًا.'**
+  String get indoorCalibrationSaved;
+
+  /// Warning when calibrating under poor device conditions.
+  ///
+  /// In ar, this message translates to:
+  /// **'الجهاز مشحون أو ساخن. يمكن حفظ النقطة، لكن الدقة قد تنخفض.'**
+  String get indoorCalibrationWarning;
+
   /// Label for a save action/button.
   ///
   /// In ar, this message translates to:
@@ -473,7 +521,7 @@ abstract class AppLocalizations {
   /// Explanation shown when the indoor help button is tapped
   ///
   /// In ar, this message translates to:
-  /// **'معظم الهواتف لا تحتوي على مستشعر لدرجة حرارة المحيط، لذا تُقدَّر قراءة الداخل من درجة الحرارة بالخارج مضافًا إليها فرق الحرارة الداخلي. اضبط هذا الفرق من الإعدادات بالمقارنة مع ميزان حرارة حقيقي. وإذا كان جهازك يحتوي على مستشعر، تُستخدم قراءته مباشرة مع وسم «مستشعر».'**
+  /// **'تُقدَّر درجة الحرارة الداخلية من مستشعرات الجهاز الحرارية على الهاتف، دون إنترنت أو موقع. عايرها من الإعدادات مقابل ميزان حرارة حقيقي. إذا وُجد مستشعر محيط أو مستشعر بلوتوث، تُستخدم قراءته مباشرة.'**
   String get insideHelpBody;
 
   /// Explanation shown when the outdoor help button is tapped

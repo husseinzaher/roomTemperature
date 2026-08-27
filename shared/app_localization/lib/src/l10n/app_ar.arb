@@ -140,6 +140,38 @@
   "@indoorOffsetHint": {
     "description": "Explanatory hint for the indoor offset setting."
   },
+  "indoorCalibration": "معايرة درجة الحرارة الداخلية",
+  "@indoorCalibration": {
+    "description": "Title for the indoor temperature calibration section."
+  },
+  "indoorCalibrationHint": "أدخل درجة حرارة الغرفة الفعلية من ميزان حرارة. المعايرة تتم بالكامل دون اتصال بالإنترنت.",
+  "@indoorCalibrationHint": {
+    "description": "Explanation that indoor calibration is fully offline."
+  },
+  "indoorCurrentEstimate": "التقدير الحالي",
+  "@indoorCurrentEstimate": {
+    "description": "Label for the current indoor estimate."
+  },
+  "indoorReferenceTemperature": "درجة حرارة الغرفة الفعلية",
+  "@indoorReferenceTemperature": {
+    "description": "Label for the reference room temperature field."
+  },
+  "indoorCalibrate": "معايرة",
+  "@indoorCalibrate": {
+    "description": "Button label to save an indoor calibration point."
+  },
+  "indoorResetCalibration": "إعادة ضبط المعايرة",
+  "@indoorResetCalibration": {
+    "description": "Button label to clear indoor calibration."
+  },
+  "indoorCalibrationSaved": "تم حفظ المعايرة محليًا.",
+  "@indoorCalibrationSaved": {
+    "description": "Confirmation after indoor calibration is stored."
+  },
+  "indoorCalibrationWarning": "الجهاز مشحون أو ساخن. يمكن حفظ النقطة، لكن الدقة قد تنخفض.",
+  "@indoorCalibrationWarning": {
+    "description": "Warning when calibrating under poor device conditions."
+  },
   "save": "حفظ",
   "@save": {
     "description": "Label for a save action/button."
@@ -255,7 +287,7 @@
   "@weatherRadar": {
     "description": "Title of the weather radar row"
   },
-  "insideHelpBody": "معظم الهواتف لا تحتوي على مستشعر لدرجة حرارة المحيط، لذا تُقدَّر قراءة الداخل من درجة الحرارة بالخارج مضافًا إليها فرق الحرارة الداخلي. اضبط هذا الفرق من الإعدادات بالمقارنة مع ميزان حرارة حقيقي. وإذا كان جهازك يحتوي على مستشعر، تُستخدم قراءته مباشرة مع وسم «مستشعر».",
+  "insideHelpBody": "تُقدَّر درجة الحرارة الداخلية من مستشعرات الجهاز الحرارية على الهاتف، دون إنترنت أو موقع. عايرها من الإعدادات مقابل ميزان حرارة حقيقي. إذا وُجد مستشعر محيط أو مستشعر بلوتوث، تُستخدم قراءته مباشرة.",
   "@insideHelpBody": {
     "description": "Explanation shown when the indoor help button is tapped"
   },

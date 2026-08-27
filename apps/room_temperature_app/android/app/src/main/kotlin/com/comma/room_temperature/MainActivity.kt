@@ -16,6 +16,7 @@ import io.flutter.plugin.common.MethodChannel
 
 private const val AMBIENT_SENSOR_CHANNEL = "room_temperature/ambient_sensor"
 private const val BATTERY_TEMPERATURE_CHANNEL = "room_temperature/battery_temperature"
+private const val THERMAL_DATA_CHANNEL = "room_temperature/thermal_data"
 private const val AMBIENT_SENSOR_READ_TIMEOUT_MS = 2000L
 
 class MainActivity : FlutterActivity() {
@@ -36,6 +37,16 @@ class MainActivity : FlutterActivity() {
                 when (call.method) {
                     "hasBatteryTemperature" -> result.success(hasBatteryTemperature())
                     "getBatteryTemperature" -> result.success(readBatteryTemperatureCelsius())
+                    else -> result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, THERMAL_DATA_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "getThermalSnapshot" -> result.success(
+                        ThermalDataProvider.snapshot(this),
+                    )
                     else -> result.notImplemented()
                 }
             }
