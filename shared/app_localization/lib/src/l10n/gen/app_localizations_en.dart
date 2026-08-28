@@ -115,6 +115,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'Used to fine-tune the estimated room temperature.';
 
   @override
+  String get indoorCalibration => 'Indoor Temperature Calibration';
+
+  @override
+  String get indoorCalibrationHint =>
+      'Enter the actual room temperature from a thermometer. Calibration is stored locally and works completely offline.';
+
+  @override
+  String get indoorCurrentEstimate => 'Current estimate';
+
+  @override
+  String get indoorReferenceTemperature => 'Reference temperature';
+
+  @override
+  String get indoorCalibrate => 'Calibrate';
+
+  @override
+  String get indoorResetCalibration => 'Reset Calibration';
+
+  @override
+  String get indoorCalibrationSaved => 'Calibration saved locally.';
+
+  @override
+  String get indoorCalibrationWarning =>
+      'The phone is charging or thermally stressed. You can still save this point, but it may be less accurate.';
+
+  @override
   String get save => 'Save';
 
   @override
@@ -206,7 +232,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get insideHelpBody =>
-      'Most phones have no ambient-temperature sensor, so the indoor reading is estimated from the outdoor temperature plus your indoor offset. Calibrate the offset in Settings against a real thermometer. When your device does have a sensor, the reading is used directly and labelled Sensor.';
+      'Indoor temperature is estimated on-device from local thermal sensors, with no internet or location required. Calibrate it in Settings against a real thermometer. When the phone has an ambient or Bluetooth sensor, that reading is used directly.';
 
   @override
   String get outsideHelpBody =>

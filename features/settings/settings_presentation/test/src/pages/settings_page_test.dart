@@ -26,21 +26,16 @@ void main() {
       settingsRepository = MockSettingsRepository();
 
       when(
-        () => settingsRepository.watchSettings(userId: 'user-1'),
+        () => settingsRepository.watchSettings(),
       ).thenAnswer((_) => Stream.value(settings));
       when(
         () => settingsRepository.updateSettings(
-          userId: any(named: 'userId'),
           settings: any(named: 'settings'),
         ),
       ).thenAnswer((_) async {});
 
-      cubit = SettingsCubit(
-        userId: 'user-1',
-        settingsRepository: settingsRepository,
-      );
+      cubit = SettingsCubit(settingsRepository: settingsRepository);
 
-      // Let the loaded settings land before the widget mounts.
       await Future<void>.delayed(Duration.zero);
     });
 
@@ -48,26 +43,25 @@ void main() {
       await cubit.close();
     });
 
-    Widget buildSubject() {
+    Widget buildSubject({IndoorCalibrationHost? indoorCalibration}) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: BlocProvider<SettingsCubit>.value(
           value: cubit,
-          child: const SettingsPage(),
+          child: SettingsPage(indoorCalibration: indoorCalibration),
         ),
       );
     }
 
-    testWidgets('renders the units toggle, threshold controls, offset '
-        'slider, and save button for a loaded state', (tester) async {
+    testWidgets('renders the units toggle, threshold controls, and save '
+        'button for a loaded state', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
       expect(find.byType(GlassSegmentedToggle), findsOneWidget);
       expect(find.byType(SwitchListTile), findsOneWidget);
       expect(find.byType(RangeSlider), findsOneWidget);
-      expect(find.byType(Slider), findsOneWidget);
       await tester.scrollUntilVisible(find.byType(PrimaryButton), 200);
       expect(find.byType(PrimaryButton), findsOneWidget);
     });
@@ -93,7 +87,7 @@ void main() {
 
       expect(find.text('Battery Temperature'), findsOneWidget);
       expect(find.text('Manual'), findsOneWidget);
-      expect(find.text('Estimated'), findsOneWidget);
+      expect(find.text('Local estimate'), findsOneWidget);
     });
 
     testWidgets('shows the battery warning when battery is selected', (
@@ -117,6 +111,26 @@ void main() {
       );
     });
 
+    testWidgets('renders indoor calibration when a host is provided', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          indoorCalibration: IndoorCalibrationHost(
+            load: () async => const IndoorCalibrationView(
+              estimateCelsius: 25,
+            ),
+            calibrate: (_) async => (saved: true, poorConditions: false),
+            reset: () async {},
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(TextField), findsOneWidget);
+    });
+
     testWidgets('tapping save persists the edited settings via the '
         'repository', (tester) async {
       await tester.pumpWidget(buildSubject());
@@ -127,10 +141,7 @@ void main() {
       await tester.pump();
 
       verify(
-        () => settingsRepository.updateSettings(
-          userId: 'user-1',
-          settings: settings,
-        ),
+        () => settingsRepository.updateSettings(settings: settings),
       ).called(1);
     });
   });

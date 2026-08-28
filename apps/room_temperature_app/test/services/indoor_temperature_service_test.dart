@@ -20,27 +20,19 @@ class _FakeProvider implements IndoorTemperatureProvider {
 
   @override
   Stream<double> get temperatureStream async* {
-    if (celsius != null) yield celsius!;
+    if (celsius != null) {
+      yield celsius!;
+    }
   }
 }
 
 void main() {
-  const weather = OutsideWeather(
-    temperatureCelsius: 20,
-    condition: WeatherCondition.clear,
-    isDay: true,
-    apparentTemperatureCelsius: 19,
-    relativeHumidityPercent: 40,
-    windSpeedKph: 10,
-    surfacePressureHpa: 1010,
-    uvIndex: 3,
-  );
-
   IndoorTemperatureService buildService({
     IndoorTemperatureProvider? ambient,
     IndoorTemperatureProvider? bluetooth,
     IndoorTemperatureProvider? battery,
     IndoorTemperatureProvider? manual,
+    IndoorTemperatureProvider? thermal,
   }) {
     return IndoorTemperatureService(
       ambientProvider:
@@ -54,6 +46,8 @@ void main() {
           _FakeProvider(source: IndoorTemperatureSource.batteryTemperature),
       manualProvider:
           manual ?? _FakeProvider(source: IndoorTemperatureSource.manual),
+      thermalProvider:
+          thermal ?? _FakeProvider(source: IndoorTemperatureSource.estimated),
     );
   }
 
@@ -70,12 +64,15 @@ void main() {
           available: true,
           celsius: 36.5,
         ),
+        thermal: _FakeProvider(
+          source: IndoorTemperatureSource.estimated,
+          available: true,
+          celsius: 26,
+        ),
       );
 
       final reading = await service.resolve(
         preference: IndoorTemperaturePreference.automatic,
-        weather: weather,
-        indoorOffsetCelsius: 0,
       );
 
       expect(reading?.celsius, 21.4);
@@ -83,7 +80,7 @@ void main() {
     });
 
     test(
-      'automatic falls through to battery when ambient and bluetooth are gone',
+      'automatic uses local thermal estimate instead of battery',
       () async {
         final service = buildService(
           battery: _FakeProvider(
@@ -91,29 +88,36 @@ void main() {
             available: true,
             celsius: 36.5,
           ),
+          thermal: _FakeProvider(
+            source: IndoorTemperatureSource.estimated,
+            available: true,
+            celsius: 24.7,
+          ),
         );
 
         final reading = await service.resolve(
           preference: IndoorTemperaturePreference.automatic,
-          weather: weather,
-          indoorOffsetCelsius: 2,
         );
 
-        expect(reading?.celsius, 36.5);
-        expect(reading?.source, IndoorTemperatureSource.batteryTemperature);
+        expect(reading?.celsius, 24.7);
+        expect(reading?.source, IndoorTemperatureSource.estimated);
       },
     );
 
-    test('automatic uses the weather estimate as the last fallback', () async {
-      final service = buildService();
+    test('automatic does not require weather or an offset', () async {
+      final service = buildService(
+        thermal: _FakeProvider(
+          source: IndoorTemperatureSource.estimated,
+          available: true,
+          celsius: 25,
+        ),
+      );
 
       final reading = await service.resolve(
         preference: IndoorTemperaturePreference.automatic,
-        weather: weather,
-        indoorOffsetCelsius: 1.5,
       );
 
-      expect(reading?.celsius, 21.5);
+      expect(reading?.celsius, 25);
       expect(reading?.source, IndoorTemperatureSource.estimated);
     });
 
@@ -130,8 +134,6 @@ void main() {
 
         final reading = await service.resolve(
           preference: IndoorTemperaturePreference.batteryTemperature,
-          weather: weather,
-          indoorOffsetCelsius: 0,
         );
 
         expect(reading?.celsius, 36.5);
@@ -146,8 +148,6 @@ void main() {
 
         final reading = await service.resolve(
           preference: IndoorTemperaturePreference.ambientSensor,
-          weather: weather,
-          indoorOffsetCelsius: 0,
         );
 
         expect(reading, isNull);

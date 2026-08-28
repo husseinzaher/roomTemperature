@@ -11,8 +11,10 @@ import 'package:provider/provider.dart';
 import 'package:room_temperature_app/routing/router.dart';
 import 'package:room_temperature_app/services/ambient_sensor_service.dart';
 import 'package:room_temperature_app/services/battery_temperature_service.dart';
+import 'package:room_temperature_app/services/indoor_estimator_store.dart';
 import 'package:room_temperature_app/services/indoor_temperature_service.dart';
 import 'package:room_temperature_app/services/location_service.dart';
+import 'package:room_temperature_app/services/thermal_data_service.dart';
 import 'package:settings_data/settings_data.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:temperature_data/temperature_data.dart';
@@ -50,6 +52,8 @@ class App extends StatelessWidget {
     final settingsRepository = DriftSettingsRepository(database: database);
     const ambientSensorService = AmbientSensorService();
     const batteryTemperatureService = BatteryTemperatureService();
+    const thermalDataService = ThermalDataService();
+    final indoorEstimatorStore = IndoorEstimatorStore(database: database);
     final indoorTemperatureService = IndoorTemperatureService(
       ambientProvider: const AndroidAmbientTemperatureProvider(
         ambientSensorService,
@@ -62,6 +66,10 @@ class App extends StatelessWidget {
         () => settingsRepository
             .lastSettingsOrDefault()
             .manualIndoorTemperatureCelsius,
+      ),
+      thermalProvider: ThermalEstimateProvider(
+        thermalData: thermalDataService,
+        store: indoorEstimatorStore,
       ),
     );
 

@@ -22,10 +22,14 @@ class DriftTemperatureRepository implements ITemperatureRepository {
 
   @override
   Future<void> recordReading({required Reading reading}) {
+    final outside = reading.outsideTemperatureCelsius;
+    if (outside == null) {
+      return Future.value();
+    }
     return _database.insertReading(
       roomTemperatureC: reading.roomTemperatureCelsius,
       roomTemperatureSource: reading.roomTemperatureSource.name,
-      outsideTemperatureC: reading.outsideTemperatureCelsius,
+      outsideTemperatureC: outside,
       recordedAt: reading.timestamp,
     );
   }

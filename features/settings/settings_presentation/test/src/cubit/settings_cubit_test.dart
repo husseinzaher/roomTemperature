@@ -24,11 +24,10 @@ void main() {
 
     SettingsCubit buildCubit({Stream<UserSettings>? watchStream}) {
       when(
-        () => settingsRepository.watchSettings(userId: 'user-1'),
+        () => settingsRepository.watchSettings(),
       ).thenAnswer((_) => watchStream ?? const Stream.empty());
 
       return SettingsCubit(
-        userId: 'user-1',
         settingsRepository: settingsRepository,
       );
     }
@@ -64,7 +63,6 @@ void main() {
       setUp: () {
         when(
           () => settingsRepository.updateSettings(
-            userId: 'user-1',
             settings: loadedSettings,
           ),
         ).thenAnswer((_) async {});
@@ -74,7 +72,6 @@ void main() {
       verify: (_) {
         verify(
           () => settingsRepository.updateSettings(
-            userId: 'user-1',
             settings: loadedSettings,
           ),
         ).called(1);
@@ -88,7 +85,6 @@ void main() {
       setUp: () {
         when(
           () => settingsRepository.updateSettings(
-            userId: 'user-1',
             settings: loadedSettings,
           ),
         ).thenThrow(Exception('network down'));

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:app_localization/app_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:settings_presentation/src/cubit/settings_cubit.dart';
 import 'package:settings_presentation/src/cubit/settings_state.dart';
+import 'package:settings_presentation/src/pages/indoor_calibration.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 /// {@template settings_page}
@@ -19,11 +22,15 @@ class SettingsPage extends StatelessWidget {
   const SettingsPage({
     super.key,
     this.loadIndoorTemperatureSourceAvailability,
+    this.indoorCalibration,
   });
 
   /// Loads source availability for the source-selection controls.
   final Future<Map<IndoorTemperaturePreference, bool>> Function()?
   loadIndoorTemperatureSourceAvailability;
+
+  /// Optional local indoor-temperature calibration, injected by the app.
+  final IndoorCalibrationHost? indoorCalibration;
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +104,7 @@ class SettingsPage extends StatelessWidget {
           : null,
       loadIndoorTemperatureSourceAvailability:
           loadIndoorTemperatureSourceAvailability,
+      indoorCalibration: indoorCalibration,
       onSave: (updated) => context.read<SettingsCubit>().save(updated),
     );
   }
@@ -108,6 +116,7 @@ class _SettingsForm extends StatefulWidget {
     required this.isSaving,
     required this.onSave,
     this.loadIndoorTemperatureSourceAvailability,
+    this.indoorCalibration,
     this.errorMessage,
   });
 
@@ -116,6 +125,7 @@ class _SettingsForm extends StatefulWidget {
   final String? errorMessage;
   final Future<Map<IndoorTemperaturePreference, bool>> Function()?
   loadIndoorTemperatureSourceAvailability;
+  final IndoorCalibrationHost? indoorCalibration;
   final ValueChanged<UserSettings> onSave;
 
   @override
@@ -123,9 +133,6 @@ class _SettingsForm extends StatefulWidget {
 }
 
 class _SettingsFormState extends State<_SettingsForm> {
-  static const double _minOffsetCelsius = -10;
-  static const double _maxOffsetCelsius = 10;
-  static const double _offsetStepCelsius = 0.5;
   static const double _minThresholdCelsius = -20;
   static const double _maxThresholdCelsius = 50;
 
@@ -247,44 +254,9 @@ class _SettingsFormState extends State<_SettingsForm> {
               ),
             ),
             const SizedBox(height: 14),
-            GlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SectionLabel(l10n.indoorOffset),
-                  const SizedBox(height: 6),
-                  Text(
-                    l10n.indoorOffsetHint,
-                    style: const TextStyle(
-                      color: GlassTokens.onGlassMuted,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    _formatCelsius(_indoorOffsetCelsius),
-                    style: const TextStyle(
-                      color: GlassTokens.onGlass,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
-                  Slider(
-                    min: _minOffsetCelsius,
-                    max: _maxOffsetCelsius,
-                    divisions:
-                        ((_maxOffsetCelsius - _minOffsetCelsius) /
-                                _offsetStepCelsius)
-                            .round(),
-                    label: _formatCelsius(_indoorOffsetCelsius),
-                    value: _indoorOffsetCelsius,
-                    onChanged: (value) =>
-                        setState(() => _indoorOffsetCelsius = value),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
+            if (widget.indoorCalibration != null)
+              _IndoorCalibrationCard(host: widget.indoorCalibration!),
+            if (widget.indoorCalibration != null) const SizedBox(height: 14),
             GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -292,9 +264,10 @@ class _SettingsFormState extends State<_SettingsForm> {
                   const _SectionLabel('Indoor Temperature Source'),
                   const SizedBox(height: 6),
                   const Text(
-                    'Automatic uses the first available source: Phone '
-                    'Ambient Sensor, Bluetooth Sensor, Battery Temperature, '
-                    'Manual, then Estimated.',
+                    'Automatic uses the first available local source: Phone '
+                    'Ambient Sensor, Bluetooth Sensor, then the offline '
+                    'thermal estimate, then Manual. Battery temperature is '
+                    'never used automatically as room temperature.',
                     style: TextStyle(
                       color: GlassTokens.onGlassMuted,
                       fontSize: 13,
@@ -485,7 +458,7 @@ class _SettingsFormState extends State<_SettingsForm> {
       IndoorTemperaturePreference.bluetoothSensor => 'Bluetooth Sensor',
       IndoorTemperaturePreference.batteryTemperature => 'Battery Temperature',
       IndoorTemperaturePreference.manual => 'Manual',
-      IndoorTemperaturePreference.estimated => 'Estimated',
+      IndoorTemperaturePreference.estimated => 'Local estimate',
     };
   }
 }
@@ -504,6 +477,184 @@ class _SectionLabel extends StatelessWidget {
         fontSize: 13,
         fontWeight: FontWeight.w500,
         letterSpacing: 1.6,
+      ),
+    );
+  }
+}
+
+class _IndoorCalibrationCard extends StatefulWidget {
+  const _IndoorCalibrationCard({required this.host});
+
+  final IndoorCalibrationHost host;
+
+  @override
+  State<_IndoorCalibrationCard> createState() => _IndoorCalibrationCardState();
+}
+
+class _IndoorCalibrationCardState extends State<_IndoorCalibrationCard> {
+  final _referenceController = TextEditingController();
+  IndoorCalibrationView _view = const IndoorCalibrationView();
+  String? _message;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_reload());
+  }
+
+  @override
+  void dispose() {
+    _referenceController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _reload() async {
+    final view = await widget.host.load();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _view = view);
+  }
+
+  Future<void> _calibrate() async {
+    final actual = double.tryParse(_referenceController.text.trim());
+    if (actual == null) {
+      return;
+    }
+    setState(() => _busy = true);
+    final result = await widget.host.calibrate(actual);
+    if (!mounted) {
+      return;
+    }
+    final l10n = context.l10n;
+    setState(() {
+      _busy = false;
+      _message = result.poorConditions
+          ? l10n.indoorCalibrationWarning
+          : l10n.indoorCalibrationSaved;
+    });
+    await _reload();
+  }
+
+  Future<void> _reset() async {
+    setState(() => _busy = true);
+    await widget.host.reset();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _busy = false;
+      _message = null;
+    });
+    await _reload();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final estimate = _view.estimateCelsius;
+
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionLabel(l10n.indoorCalibration),
+          const SizedBox(height: 6),
+          Text(
+            l10n.indoorCalibrationHint,
+            style: const TextStyle(
+              color: GlassTokens.onGlassMuted,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${l10n.indoorCurrentEstimate}: '
+            '${estimate == null ? '—' : '${estimate.toStringAsFixed(1)}°C'}',
+            style: const TextStyle(color: GlassTokens.onGlass, fontSize: 16),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _view.statusLabel,
+            style: const TextStyle(
+              color: GlassTokens.onGlassMuted,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            l10n.indoorReferenceTemperature,
+            style: const TextStyle(color: GlassTokens.onGlass),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _referenceController,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+              signed: true,
+            ),
+            style: const TextStyle(color: GlassTokens.onGlass),
+            decoration: const InputDecoration(
+              suffixText: '°C',
+              suffixStyle: TextStyle(color: GlassTokens.onGlassMuted),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Color(0x66FFFFFF)),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.white),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: PrimaryButton(
+                  label: l10n.indoorCalibrate,
+                  isLoading: _busy,
+                  onPressed: _calibrate,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _busy ? null : _reset,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: GlassTokens.onGlass,
+                    side: const BorderSide(color: Color(0x66FFFFFF)),
+                    minimumSize: const Size.fromHeight(52),
+                  ),
+                  child: Text(l10n.indoorResetCalibration),
+                ),
+              ),
+            ],
+          ),
+          if (_message != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              _message!,
+              style: const TextStyle(
+                color: GlassTokens.onGlassMuted,
+                fontSize: 13,
+              ),
+            ),
+          ],
+          if (_view.debugText != null) ...[
+            const SizedBox(height: 16),
+            const _SectionLabel('Indoor Temperature Debug'),
+            const SizedBox(height: 8),
+            SelectableText(
+              _view.debugText!,
+              style: const TextStyle(
+                color: GlassTokens.onGlassMuted,
+                fontSize: 12,
+                height: 1.35,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

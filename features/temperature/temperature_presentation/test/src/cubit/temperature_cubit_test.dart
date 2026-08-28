@@ -47,8 +47,7 @@ void main() {
     TemperatureCubit buildCubit({
       Stream<Reading?>? watchStream,
       Future<double?> Function()? readAmbientSensor,
-      Future<IndoorTemperatureReading?> Function(OutsideWeather weather)?
-      resolveIndoorTemperature,
+      Future<IndoorTemperatureReading?> Function()? resolveIndoorTemperature,
       double indoorOffset = 2,
     }) {
       when(
@@ -199,6 +198,42 @@ void main() {
     );
 
     blocTest<TemperatureCubit, TemperatureState>(
+      'refresh() still loads indoor when weather fetch fails if a resolver '
+      'is injected',
+      build: () => buildCubit(
+        resolveIndoorTemperature: () async => const IndoorTemperatureReading(
+          celsius: 24.5,
+          source: IndoorTemperatureSource.estimated,
+          confidence: 0.8,
+        ),
+      ),
+      setUp: () {
+        when(
+          () => weatherRepository.fetchOutsideWeather(location: location),
+        ).thenThrow(Exception('network down'));
+      },
+      act: (cubit) => cubit.refresh(),
+      expect: () => [
+        isA<TemperatureState>().having(
+          (s) => s.status,
+          'status',
+          TemperatureStatus.loading,
+        ),
+        isA<TemperatureState>()
+            .having((s) => s.status, 'status', TemperatureStatus.loaded)
+            .having(
+              (s) => s.reading?.roomTemperatureCelsius,
+              'roomTemperatureCelsius',
+              24.5,
+            )
+            .having(
+              (s) => s.reading?.roomTemperatureSource,
+              'roomTemperatureSource',
+              RoomTemperatureSource.estimated,
+            ),
+      ],
+    );
+    blocTest<TemperatureCubit, TemperatureState>(
       'refresh() emits an error state when the weather fetch fails',
       build: buildCubit,
       setUp: () {
@@ -250,7 +285,7 @@ void main() {
     blocTest<TemperatureCubit, TemperatureState>(
       'refresh() uses a resolved battery temperature reading',
       build: () => buildCubit(
-        resolveIndoorTemperature: (_) async => const IndoorTemperatureReading(
+        resolveIndoorTemperature: () async => const IndoorTemperatureReading(
           celsius: 36.5,
           source: IndoorTemperatureSource.batteryTemperature,
         ),
@@ -285,7 +320,7 @@ void main() {
     blocTest<TemperatureCubit, TemperatureState>(
       'refresh() emits sourceUnavailable when the resolver returns null',
       build: () => buildCubit(
-        resolveIndoorTemperature: (_) async => null,
+        resolveIndoorTemperature: () async => null,
       ),
       setUp: () {
         when(
