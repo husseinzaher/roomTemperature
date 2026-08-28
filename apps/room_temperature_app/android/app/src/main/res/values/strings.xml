@@ -2,6 +2,9 @@
 <resources>
     <string name="widget_home_name">Room temperature</string>
     <string name="widget_lock_name">Room temperature (lock)</string>
+    <string name="widget_forecast_name">5-day forecast</string>
+    <string name="widget_places_name">Places temperature</string>
+    <string name="widget_current_name">Current temperature</string>
     <string name="widget_room_label">Inside</string>
     <string name="widget_outside_label">Outside</string>
     <string name="widget_feels_like">Feels</string>
@@ -9,6 +12,11 @@
     <string name="widget_wind">Wind</string>
     <string name="widget_uv">UV</string>
     <string name="widget_updated_at">Updated %1$s</string>
-    <string name="widget_description">Indoor and outdoor weather, location, and a 4-day forecast</string>
+    <string name="widget_forecast_title">5-day forecast</string>
+    <string name="widget_places_title">Places</string>
+    <string name="widget_description">Indoor and outdoor weather, location, and a 5-day forecast</string>
     <string name="widget_lock_description">Compact indoor and outdoor temperature for the lock screen</string>
+    <string name="widget_forecast_description">Next 5 days of outdoor weather</string>
+    <string name="widget_places_description">Average indoor temperature at visited places</string>
+    <string name="widget_current_description">Compact indoor and outdoor temperature</string>
 </resources>

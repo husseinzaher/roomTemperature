@@ -2,9 +2,17 @@
 <resources>
     <string name="widget_home_name">درجة الحرارة</string>
     <string name="widget_lock_name">درجة الحرارة (القفل)</string>
+    <string name="widget_forecast_name">توقعات ٥ أيام</string>
+    <string name="widget_places_name">حرارة الأماكن</string>
+    <string name="widget_current_name">درجة الحرارة الحالية</string>
     <string name="widget_room_label">داخل</string>
     <string name="widget_outside_label">خارج</string>
     <string name="widget_updated_at">حُدّث %1$s</string>
+    <string name="widget_forecast_title">توقعات ٥ أيام</string>
+    <string name="widget_places_title">الأماكن</string>
     <string name="widget_description">درجة الحرارة داخل الغرفة وخارجها على الشاشة الرئيسية</string>
     <string name="widget_lock_description">درجة حرارة مدمجة لشاشة القفل</string>
+    <string name="widget_forecast_description">توقعات الطقس للأيام الخمسة القادمة</string>
+    <string name="widget_places_description">متوسط درجة الحرارة الداخلية في الأماكن المزارة</string>
+    <string name="widget_current_description">درجة الحرارة داخل الغرفة وخارجها بشكل مدمج</string>
 </resources>

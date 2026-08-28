@@ -7,11 +7,8 @@ import android.os.Bundle
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetProvider
 
-/**
- * Home-screen widget. Picks a layout from the actual min width/height
- * reported by the launcher after each resize.
- */
-class RoomTempWidgetProvider : HomeWidgetProvider() {
+/** Dedicated 5-day outdoor forecast widget. */
+class RoomTempForecastWidgetProvider : HomeWidgetProvider() {
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -19,16 +16,13 @@ class RoomTempWidgetProvider : HomeWidgetProvider() {
         widgetData: SharedPreferences,
     ) {
         appWidgetIds.forEach { widgetId ->
-            val layoutId = RoomTempWidgetViews.layoutForMain(
-                appWidgetManager = appWidgetManager,
-                widgetId = widgetId,
-            )
+            val size = RoomTempWidgetViews.sizeFor(appWidgetManager, widgetId)
             val views: RemoteViews = RoomTempWidgetViews.build(
                 context = context,
-                layoutId = layoutId,
+                layoutId = R.layout.room_temp_forecast_widget,
                 widgetData = widgetData,
                 widgetId = widgetId,
-                size = RoomTempWidgetViews.sizeFor(appWidgetManager, widgetId),
+                size = size,
             )
             appWidgetManager.updateAppWidget(widgetId, views)
         }

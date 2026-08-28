@@ -21,12 +21,15 @@ class TemperatureCubit extends Cubit<TemperatureState> {
     required this._getIndoorOffset,
     this._readAmbientSensor,
     this._resolveIndoorTemperature,
+    this._loadCachedWeather,
+    this._persistWeather,
   }) : _temperatureRepository = temperatureRepository,
        super(const TemperatureState.loading()) {
     _subscription = temperatureRepository.watchLatestReading().listen(
       _onReadingReceived,
       onError: _onWatchError,
     );
+    unawaited(_seedCachedWeather());
   }
 
   final ITemperatureRepository _temperatureRepository;
@@ -36,8 +39,31 @@ class TemperatureCubit extends Cubit<TemperatureState> {
   final double Function() _getIndoorOffset;
   final Future<double?> Function()? _readAmbientSensor;
   final Future<IndoorTemperatureReading?> Function()? _resolveIndoorTemperature;
+  final Future<OutsideWeather?> Function()? _loadCachedWeather;
+  final Future<void> Function(OutsideWeather weather)? _persistWeather;
 
   StreamSubscription<Reading?>? _subscription;
+
+  Future<void> _seedCachedWeather() async {
+    final loader = _loadCachedWeather;
+    if (loader == null) {
+      return;
+    }
+    try {
+      final cached = await loader();
+      if (cached == null || isClosed || state.weather != null) {
+        return;
+      }
+      final reading = state.reading;
+      if (reading != null) {
+        emit(TemperatureState.loaded(reading: reading, weather: cached));
+      } else {
+        emit(TemperatureState.loading(weather: cached));
+      }
+    } on Exception {
+      // Corrupt cache must not block startup.
+    }
+  }
 
   void _onReadingReceived(Reading? reading) {
     if (reading == null) {
@@ -79,8 +105,20 @@ class TemperatureCubit extends Cubit<TemperatureState> {
       weather = await _weatherRepository.fetchOutsideWeather(
         location: location,
       );
+      final persist = _persistWeather;
+      if (persist != null && weather != null) {
+        await persist(weather);
+      }
     } on Exception catch (error) {
       weatherError = error;
+      weather = state.weather;
+      if (weather == null) {
+        try {
+          weather = await _loadCachedWeather?.call();
+        } on Exception {
+          weather = null;
+        }
+      }
     }
 
     final outsideTemperatureCelsius =
