@@ -60,8 +60,8 @@ void main() {
 
   group('BatteryRoomTemperatureModel', () {
     const model = BatteryRoomTemperatureModel(
-      couplingKPerSecond: 0.01,
-      selfHeatCoefficient: 1,
+      tauSeconds: 100,
+      rTh: 1,
     );
 
     test('steady battery with no power equals T_batt', () {
@@ -69,19 +69,31 @@ void main() {
       expect(terms.roomCelsius, 30);
       expect(terms.lagCorrectionCelsius, 0);
       expect(terms.selfHeatCorrectionCelsius, 0);
+      expect(terms.powerAvailable, isFalse);
     });
 
-    test('self-heating subtracts c·I·V from T_batt', () {
+    test('self-heating subtracts R_th·P when power is available', () {
       final terms = model.evaluate(
         batteryCelsius: 30,
-        currentAmps: 0.5,
-        voltageVolts: 4,
+        powerWatts: 2,
       );
       expect(terms.selfHeatCorrectionCelsius, 2);
       expect(terms.roomCelsius, 28);
+      expect(terms.powerAvailable, isTrue);
     });
 
-    test('cooling lag adds (1/k)·dT/dt to T_batt', () {
+    test('missing power does not invent a zero-watt heat term', () {
+      final withPower = model.evaluate(
+        batteryCelsius: 30,
+        powerWatts: 2,
+      );
+      final withoutPower = model.evaluate(batteryCelsius: 30);
+      expect(withoutPower.powerAvailable, isFalse);
+      expect(withoutPower.roomCelsius, 30);
+      expect(withPower.roomCelsius, isNot(withoutPower.roomCelsius));
+    });
+
+    test('cooling lag adds tau·dT/dt to T_batt', () {
       final terms = model.evaluate(
         batteryCelsius: 30,
         dBatteryCelsiusPerSecond: -0.02,
@@ -90,51 +102,51 @@ void main() {
       expect(terms.roomCelsius, closeTo(28, 1e-9));
     });
 
-    test('combined equations match T_batt + (1/k)dT/dt − cIV', () {
+    test('combined model is T_batt + tau·dT/dt − R_th·P', () {
       final terms = model.evaluate(
         batteryCelsius: 30,
         dBatteryCelsiusPerSecond: -0.02,
-        currentAmps: 0.5,
-        voltageVolts: 4,
+        powerWatts: 2,
       );
       expect(terms.roomCelsius, closeTo(26, 1e-9));
     });
   });
 
   group('IndoorTemperatureEstimator', () {
-    test('battery physics is used instead of CPU or raw internals', () {
+    test('fuses battery physics with environmental proxies, not CPU', () {
       final step = run(
         snap(
           at: DateTime(2026, 1, 1, 12),
-          battery: 35,
+          battery: 29.4,
           sdr0: 27,
           cpu: 48,
           gpu: 43,
         ),
       );
       final result = step.result!;
-      expect(result.selectedSensors, contains('battery'));
-      expect(result.temperatureCelsius, closeTo(35, 1.5));
-      expect(result.temperatureCelsius, isNot(closeTo(48, 0.6)));
+      expect(result.selectedSensors, contains('sdr0'));
+      expect(result.temperatureCelsius, closeTo(27, 3));
+      expect(result.temperatureCelsius, isNot(closeTo(48, 2)));
+      expect(result.temperatureCelsius, isNot(closeTo(43, 1)));
       expect(result.debug.networkRequired, isFalse);
-      expect(result.debug.lagCorrectionCelsius, isNotNull);
+      expect(result.debug.physicsEstimateCelsius, isNotNull);
     });
 
-    test('battery much hotter than CPU is still not CPU temperature', () {
+    test('hot internals do not pull the indoor estimate to CPU', () {
       final step = run(
         snap(
           at: DateTime(2026, 1, 1, 12),
-          battery: 42,
-          sdr0: 28,
+          battery: 35,
+          sdr0: 27,
           cpu: 70,
           gpu: 55,
         ),
       );
-      expect(step.result!.temperatureCelsius, closeTo(42, 1.5));
+      expect(step.result!.temperatureCelsius, lessThan(40));
       expect(step.result!.temperatureCelsius, isNot(closeTo(70, 1)));
     });
 
-    test('phone cooling down follows battery lag, not CPU', () {
+    test('phone cooling down follows fused estimate, not CPU', () {
       var state = IndoorEstimatorState.empty;
       IndoorEstimateResult? last;
       for (var i = 0; i < 6; i++) {
@@ -192,6 +204,8 @@ void main() {
           battery: 30,
           sdr0: 27,
           cpu: 42,
+          batteryCurrentMicroamps: 400000,
+          batteryVoltageMillivolts: 4000,
         ),
       );
       final charging = run(
@@ -209,7 +223,7 @@ void main() {
       expect(charging.result!.temperatureCelsius, lessThan(38));
     });
 
-    test('discharging idle estimate uses battery physics', () {
+    test('discharging idle estimate stays near the environmental proxy', () {
       final step = run(
         snap(
           at: DateTime(2026, 1, 1, 12),
@@ -220,9 +234,9 @@ void main() {
           extraAc: 31.1,
         ),
       );
-      expect(step.result!.temperatureCelsius, closeTo(29.4, 1.5));
+      expect(step.result!.temperatureCelsius, closeTo(27, 3));
       expect(step.result!.debug.isCharging, isFalse);
-      expect(step.result!.selectedSensors, contains('battery'));
+      expect(step.result!.selectedSensors, contains('sdr0'));
     });
 
     test('CPU spike does not cause a huge indoor-temperature spike', () {
@@ -312,7 +326,7 @@ void main() {
       expect(step.result!.isApproximate, isTrue);
     });
 
-    test('sdr0 is still scored as an environmental proxy', () {
+    test('sdr0 is selected when it behaves like an environmental proxy', () {
       final step = run(
         snap(
           at: DateTime(2026, 1, 1, 12),
@@ -321,7 +335,7 @@ void main() {
           cpu: 48,
         ),
       );
-      expect(step.result!.selectedSensors, contains('battery'));
+      expect(step.result!.selectedSensors, contains('sdr0'));
       final sdr0 = step.result!.debug.zones.firstWhere(
         (zone) => zone.name == 'sdr0',
       );
@@ -344,8 +358,8 @@ void main() {
         ),
       );
       expect(step.result, isNotNull);
-      expect(step.result!.selectedSensors, contains('battery'));
-      expect(step.result!.temperatureCelsius, closeTo(31, 1.5));
+      expect(step.result!.selectedSensors, isNot(contains('sdr0')));
+      expect(step.result!.temperatureCelsius, closeTo(28.5, 3));
     });
 
     test('pa1 abnormal stuck value is rejected', () {
@@ -677,8 +691,8 @@ void main() {
     test('estimator applies lag and self-heat to battery temperature', () {
       const local = IndoorTemperatureEstimator(
         config: IndoorEstimatorConfig(
-          batteryCouplingKPerSecond: 0.01,
-          batterySelfHeatCoefficient: 1,
+          defaultTauSeconds: 100,
+          defaultRTh: 1,
           minBatteryDerivativeDuration: Duration(seconds: 1),
           maxBatteryDerivativePerSecond: 0.05,
           emaTimeConstant: Duration(seconds: 1),
@@ -696,6 +710,7 @@ void main() {
       );
       expect(first.result!.temperatureCelsius, closeTo(30, 0.4));
       expect(first.result!.debug.selfHeatCorrectionCelsius, closeTo(2, 0.05));
+      expect(first.result!.debug.powerAvailable, isTrue);
 
       final second = local.estimate(
         snapshot: snap(
@@ -716,6 +731,66 @@ void main() {
         second.result!.debug.selfHeatCorrectionCelsius,
         closeTo(2, 0.05),
       );
+    });
+
+    test('missing current does not invent power or raise confidence', () {
+      final withoutCurrent = run(
+        snap(
+          at: DateTime(2026, 1, 1, 12),
+          battery: 33,
+          zones: const [],
+        ),
+      );
+      final withCurrent = run(
+        snap(
+          at: DateTime(2026, 1, 1, 12),
+          battery: 33,
+          zones: const [],
+          batteryCurrentMicroamps: 500000,
+          batteryVoltageMillivolts: 4000,
+        ),
+      );
+      expect(withoutCurrent.result!.debug.powerAvailable, isFalse);
+      expect(withCurrent.result!.debug.powerAvailable, isTrue);
+      expect(
+        withoutCurrent.result!.confidence,
+        lessThan(withCurrent.result!.confidence),
+      );
+    });
+
+    test('missing voltage leaves power unavailable', () {
+      final step = run(
+        snap(
+          at: DateTime(2026, 1, 1, 12),
+          battery: 33,
+          zones: const [],
+          batteryCurrentMicroamps: 500000,
+        ),
+      );
+      expect(step.result!.debug.powerAvailable, isFalse);
+      expect(step.result!.debug.powerWatts, isNull);
+    });
+
+    test('invalid battery still estimates from environmental proxies', () {
+      final step = run(
+        snap(
+          at: DateTime(2026, 1, 1, 12),
+          battery: 180,
+          sdr0: 27,
+          cpu: 48,
+        ),
+      );
+      expect(step.result, isNotNull);
+      expect(step.result!.temperatureCelsius, closeTo(27, 3));
+      expect(step.result!.debug.physicsEstimateCelsius, isNull);
+    });
+
+    test('debug dump states that the network is not required', () {
+      final step = run(
+        snap(at: DateTime(2026, 1, 1, 12), battery: 29.4, sdr0: 27),
+      );
+      expect(step.result!.debug.format(), contains('Network required: false'));
+      expect(step.result!.debug.format(), contains('Physics estimate:'));
     });
 
     test('supports a wide indoor range after calibration', () {
@@ -772,7 +847,7 @@ void main() {
   });
 
   group('simulation', () {
-    test('scenario A: estimate uses battery physics, not CPU', () {
+    test('scenario A: fused estimate stays near environmental proxy, not CPU', () {
       final step = run(
         snap(
           at: DateTime(2026, 1, 1, 12),
@@ -782,7 +857,7 @@ void main() {
           gpu: 50,
         ),
       );
-      expect(step.result!.temperatureCelsius, closeTo(35, 2));
+      expect(step.result!.temperatureCelsius, closeTo(27, 3));
       expect(step.result!.temperatureCelsius, isNot(closeTo(70, 8)));
     });
 

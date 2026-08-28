@@ -7,9 +7,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:history_domain/history_domain.dart';
 import 'package:history_presentation/history_presentation.dart';
 import 'package:home_widget_bridge/home_widget_bridge.dart';
+import 'package:provider/provider.dart';
 import 'package:room_temperature_app/home/home_widget_labels.dart';
+import 'package:room_temperature_app/services/data_refresh_coordinator.dart';
 import 'package:room_temperature_app/services/indoor_temperature_service.dart';
 import 'package:room_temperature_app/services/location_service.dart';
+import 'package:room_temperature_app/services/notifications_background.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:settings_presentation/settings_presentation.dart';
 import 'package:temperature_domain/temperature_domain.dart';
@@ -72,6 +75,57 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
   static const _dashboardIndex = 0;
 
   int _index = _dashboardIndex;
+  late final DataRefreshCoordinator _coordinator;
+
+  @override
+  void initState() {
+    super.initState();
+    final settingsCubit = context.read<SettingsCubit>();
+    final temperatureCubit = context.read<TemperatureCubit>();
+    final indoorService = context.read<IndoorTemperatureService>();
+    final homeWidget = context.read<HomeWidgetBridge>();
+
+    _coordinator = DataRefreshCoordinator(
+      readInterval: () => RefreshInterval.clamp(
+        settingsCubit.state.settings?.refreshInterval ??
+            RefreshInterval.defaultInterval,
+      ),
+      intervalChanges: settingsCubit.stream.map(
+        (state) => RefreshInterval.clamp(
+          state.settings?.refreshInterval ?? RefreshInterval.defaultInterval,
+        ),
+      ),
+      publishRefresh: temperatureCubit.refresh,
+      sampleIndoor: () async {
+        final settings =
+            settingsCubit.state.settings ?? UserSettings.defaults();
+        await indoorService.resolve(
+          preference: settings.indoorTemperaturePreference,
+        );
+      },
+      rescheduleBackground: registerBackgroundDataRefresh,
+      persistWidgetInterval: (interval) {
+        return homeWidget.saveRefreshIntervalMinutes(interval.inMinutes);
+      },
+    );
+
+    _coordinator.seedLastUpdate(
+      temperatureCubit.state.reading?.timestamp,
+      hasWeather: temperatureCubit.state.weather != null,
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(_coordinator.attach());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _coordinator.dispose();
+    super.dispose();
+  }
 
   void _onUnitsChanged(Units units) {
     final cubit = context.read<SettingsCubit>();
@@ -85,8 +139,14 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
     final l10n = context.l10n;
     final units =
         context.watch<SettingsCubit>().state.settings?.units ?? Units.celsius;
+    final refreshInterval = RefreshInterval.clamp(
+      context.watch<SettingsCubit>().state.settings?.refreshInterval ??
+          RefreshInterval.defaultInterval,
+    );
 
-    return BlocListener<TemperatureCubit, TemperatureState>(
+    return ChangeNotifierProvider<DataRefreshCoordinator>.value(
+      value: _coordinator,
+      child: BlocListener<TemperatureCubit, TemperatureState>(
       listener: _pushReadingToHomeWidget,
       // Transparent Material so text in the floating nav bar resolves a
       // Material ancestor (without one, Flutter paints a debug underline
@@ -104,6 +164,7 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
                 children: [
                   DashboardPage(
                     units: units,
+                    refreshInterval: refreshInterval,
                     onUnitsChanged: _onUnitsChanged,
                     onOpenSettings: () => setState(() => _index = 2),
                   ),
@@ -154,7 +215,10 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
                                 'Learning baseline',
                             hasCalibration: profile?.hasCalibration ?? false,
                             debugText: kDebugMode
-                                ? service.lastDebug?.format()
+                                ? [
+                                    service.lastDebug?.format(),
+                                    _coordinator.state.debugSummary(),
+                                  ].whereType<String>().join('\n\n')
                                 : null,
                           );
                         },
@@ -203,6 +267,7 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -211,47 +276,27 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
     TemperatureState state,
   ) {
     final reading = state.reading;
-    if (reading == null) return;
+    if (reading == null) {
+      return;
+    }
+    if (state.status != TemperatureStatus.loaded) {
+      return;
+    }
 
-    final threshold = context.read<SettingsCubit>().state.settings?.threshold;
-    final breached =
-        threshold != null &&
-        threshold.enabled &&
-        (reading.roomTemperatureCelsius < threshold.minCelsius ||
-            reading.roomTemperatureCelsius > threshold.maxCelsius);
-
-    final units =
-        context.read<SettingsCubit>().state.settings?.units ?? Units.celsius;
-    final weather = state.weather;
-    final stats = homeWidgetStatLabels(weather: weather, units: units);
+    final settings =
+        context.read<SettingsCubit>().state.settings ?? UserSettings.defaults();
 
     unawaited(
-      context.read<HomeWidgetBridge>().updateReading(
-        HomeWidgetSnapshot.fromCelsius(
-          roomTemperatureCelsius: reading.roomTemperatureCelsius,
-          outsideTemperatureCelsius: reading.outsideTemperatureCelsius,
-          convertFromCelsius: units.fromCelsius,
-          unitSymbol: units.symbol,
-          sourceLabel: homeWidgetSourceLabel(reading.roomTemperatureSource),
-          thresholdBreached: breached,
-          updatedAt: reading.timestamp,
-          locationLabel: weather?.placeName,
-          dateLabel: homeWidgetDateLabel(reading.timestamp),
-          conditionLabel: weather == null
-              ? null
-              : homeWidgetConditionLabel(weather.condition),
-          conditionIcon: weather?.condition.name,
-          feelsLikeLabel: stats.feelsLike,
-          humidityLabel: stats.humidity,
-          windLabel: stats.wind,
-          uvLabel: stats.uv,
-          forecast: homeWidgetForecast(
-            weather: weather,
-            units: units,
-            now: reading.timestamp,
-          ),
-        ),
+      syncHomeWidget(
+        bridge: context.read<HomeWidgetBridge>(),
+        reading: reading,
+        settings: settings,
+        weather: state.weather,
       ),
+    );
+    _coordinator.recordSuccessfulUpdate(
+      at: reading.timestamp,
+      outdoor: state.weather != null,
     );
   }
 }

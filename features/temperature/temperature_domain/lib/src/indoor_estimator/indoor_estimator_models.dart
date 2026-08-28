@@ -109,6 +109,11 @@ class IndoorEstimateDebug extends Equatable {
     this.selfHeatCorrectionCelsius,
     this.batteryCurrentAmps,
     this.batteryVoltageVolts,
+    this.powerWatts,
+    this.powerAvailable,
+    this.physicsEstimateCelsius,
+    this.tauSeconds,
+    this.rTh,
   });
 
   /// Battery temperature, if known.
@@ -177,13 +182,39 @@ class IndoorEstimateDebug extends Equatable {
   /// `|V|` in volts used by the self-heating term.
   final double? batteryVoltageVolts;
 
+  /// Load proxy `P = |I| * V` in watts, if current and voltage were present.
+  final double? powerWatts;
+
+  /// Whether a real power proxy was available (not invented as zero).
+  final bool? powerAvailable;
+
+  /// Physics-only estimate before fusion, if battery was usable.
+  final double? physicsEstimateCelsius;
+
+  /// `tau` in seconds used for this sample.
+  final double? tauSeconds;
+
+  /// `R_th` in °C/W used for this sample.
+  final double? rTh;
+
   /// Multi-line dump for the debug panel.
   String format() {
     final buffer = StringBuffer()
       ..writeln('Indoor Temperature Debug')
       ..writeln()
+      ..writeln('Battery: ${_celsius(batteryCelsius)}')
+      ..writeln('Current: ${_milliAmps(batteryCurrentAmps)}')
+      ..writeln('Voltage: ${_volts(batteryVoltageVolts)}')
+      ..writeln('Power proxy: ${_watts(powerAvailable, powerWatts)}')
       ..writeln(
-        'Battery: ${batteryCelsius?.toStringAsFixed(1) ?? 'n/a'}°C',
+        'dT/dt: '
+        '${batteryDerivativePerSecond?.toStringAsFixed(4) ?? 'n/a'} °C/s',
+      )
+      ..writeln(
+        'tau: ${tauSeconds?.toStringAsFixed(0) ?? 'n/a'} s',
+      )
+      ..writeln(
+        'R_th: ${rTh?.toStringAsFixed(2) ?? 'n/a'} °C/W',
       )
       ..writeln('Charging: $isCharging')
       ..writeln('Thermal State: ${thermalStatus ?? 'n/a'}')
@@ -193,14 +224,18 @@ class IndoorEstimateDebug extends Equatable {
         'CPU load: ${cpuUsagePercent?.toStringAsFixed(0) ?? 'n/a'}%',
       )
       ..writeln()
-      ..writeln('Candidate sensors:');
+      ..writeln(
+        'Physics estimate: '
+        '${physicsEstimateCelsius?.toStringAsFixed(1) ?? 'n/a'}°C',
+      )
+      ..writeln()
+      ..writeln('Environmental proxy:');
     for (final zone in zones) {
       buffer
         ..writeln()
         ..writeln('${zone.name}:')
         ..writeln('${zone.temperatureCelsius.toStringAsFixed(1)}°C')
-        ..writeln('score: ${zone.environmentScore.toStringAsFixed(2)}')
-        ..writeln('class: ${zone.classification.name}');
+        ..writeln('score: ${zone.environmentScore.toStringAsFixed(2)}');
       if (zone.rejectReason != null) {
         buffer.writeln('reason: ${zone.rejectReason}');
       }
@@ -210,44 +245,18 @@ class IndoorEstimateDebug extends Equatable {
       ..writeln('Selected sensors:')
       ..writeln(selectedSensors.isEmpty ? '(none)' : selectedSensors.join(', '))
       ..writeln()
+      ..writeln('Calibration: ${calibrationApplied ? 'enabled' : 'disabled'}')
       ..writeln(
-        'Raw estimate: '
-        '${rawEstimateCelsius?.toStringAsFixed(2) ?? 'n/a'}°C',
-      )
-      ..writeln('Calibration: ${calibrationApplied ? 'enabled' : 'none'}')
-      ..writeln(
-        'Calibration offset: '
+        'Calibration correction: '
         '${calibrationOffsetCelsius?.toStringAsFixed(2) ?? 'n/a'}°C',
       )
       ..writeln(
-        'Final estimate: ${finalEstimateCelsius.toStringAsFixed(2)}°C',
+        'Final: ${finalEstimateCelsius.toStringAsFixed(1)}°C',
       )
-      ..writeln('Confidence: ${confidence.toStringAsFixed(2)}')
+      ..writeln(
+        'Confidence: ${(confidence * 100).toStringAsFixed(0)}%',
+      )
       ..writeln('Network required: $networkRequired');
-    if (lagCorrectionCelsius != null ||
-        selfHeatCorrectionCelsius != null) {
-      buffer
-        ..writeln()
-        ..writeln('T_room = T_batt + (1/k)·dT/dt − c·I·V')
-        ..writeln(
-          'dT/dt: '
-          '${batteryDerivativePerSecond?.toStringAsFixed(4) ?? 'n/a'} °C/s',
-        )
-        ..writeln(
-          'I: ${batteryCurrentAmps?.toStringAsFixed(3) ?? 'n/a'} A',
-        )
-        ..writeln(
-          'V: ${batteryVoltageVolts?.toStringAsFixed(2) ?? 'n/a'} V',
-        )
-        ..writeln(
-          '(1/k)·dT/dt: '
-          '${lagCorrectionCelsius?.toStringAsFixed(2) ?? 'n/a'}°C',
-        )
-        ..writeln(
-          'c·I·V: '
-          '${selfHeatCorrectionCelsius?.toStringAsFixed(2) ?? 'n/a'}°C',
-        );
-    }
     return buffer.toString();
   }
 
@@ -331,6 +340,11 @@ class IndoorCalibrationPoint extends Equatable {
     this.cpuCelsius,
     this.thermalStatus,
     this.poorConditions = false,
+    this.batteryCurrentMicroamps,
+    this.batteryVoltageMillivolts,
+    this.powerWatts,
+    this.dBatteryCelsiusPerSecond,
+    this.qualityScore = 1,
   });
 
   /// Builds a point from persisted JSON.
@@ -363,6 +377,14 @@ class IndoorCalibrationPoint extends Equatable {
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0.5,
       usedForModel: json['usedForModel'] as bool? ?? true,
       poorConditions: json['poorConditions'] as bool? ?? false,
+      batteryCurrentMicroamps: (json['batteryCurrentMicroamps'] as num?)
+          ?.toInt(),
+      batteryVoltageMillivolts: (json['batteryVoltageMillivolts'] as num?)
+          ?.toInt(),
+      powerWatts: (json['powerWatts'] as num?)?.toDouble(),
+      dBatteryCelsiusPerSecond: (json['dBatteryCelsiusPerSecond'] as num?)
+          ?.toDouble(),
+      qualityScore: (json['qualityScore'] as num?)?.toDouble() ?? 1,
     );
   }
 
@@ -402,6 +424,21 @@ class IndoorCalibrationPoint extends Equatable {
   /// Whether device conditions were poor (warning for manual points).
   final bool poorConditions;
 
+  /// Battery current at capture, microamps.
+  final int? batteryCurrentMicroamps;
+
+  /// Battery voltage at capture, millivolts.
+  final int? batteryVoltageMillivolts;
+
+  /// Load proxy `P` at capture, if current and voltage were present.
+  final double? powerWatts;
+
+  /// `dT_batt/dt` at capture.
+  final double? dBatteryCelsiusPerSecond;
+
+  /// 0–1 quality of this point for parameter fitting.
+  final double qualityScore;
+
   /// `actual - raw` offset at this point.
   double get offsetCelsius => actualRoomCelsius - rawEstimateCelsius;
 
@@ -419,6 +456,11 @@ class IndoorCalibrationPoint extends Equatable {
     'confidence': confidence,
     'usedForModel': usedForModel,
     'poorConditions': poorConditions,
+    'batteryCurrentMicroamps': batteryCurrentMicroamps,
+    'batteryVoltageMillivolts': batteryVoltageMillivolts,
+    'powerWatts': powerWatts,
+    'dBatteryCelsiusPerSecond': dBatteryCelsiusPerSecond,
+    'qualityScore': qualityScore,
   };
 
   @override
@@ -442,6 +484,13 @@ class IndoorBaseline extends Equatable {
     required this.stability,
     required this.isCharging,
     this.batteryCelsius,
+    this.batteryCurrentMicroamps,
+    this.batteryVoltageMillivolts,
+    this.powerWatts,
+    this.dBatteryCelsiusPerSecond,
+    this.thermalStatus,
+    this.estimatedRoomCelsius,
+    this.confidence,
   });
 
   /// Builds a baseline from persisted JSON.
@@ -466,6 +515,16 @@ class IndoorBaseline extends Equatable {
       ],
       sensorValues: sensorValues,
       batteryCelsius: (json['batteryCelsius'] as num?)?.toDouble(),
+      batteryCurrentMicroamps: (json['batteryCurrentMicroamps'] as num?)
+          ?.toInt(),
+      batteryVoltageMillivolts: (json['batteryVoltageMillivolts'] as num?)
+          ?.toInt(),
+      powerWatts: (json['powerWatts'] as num?)?.toDouble(),
+      dBatteryCelsiusPerSecond: (json['dBatteryCelsiusPerSecond'] as num?)
+          ?.toDouble(),
+      thermalStatus: (json['thermalStatus'] as num?)?.toInt(),
+      estimatedRoomCelsius: (json['estimatedRoomCelsius'] as num?)?.toDouble(),
+      confidence: (json['confidence'] as num?)?.toDouble(),
       stability: (json['stability'] as num?)?.toDouble() ?? 0,
       isCharging: json['isCharging'] as bool? ?? false,
     );
@@ -483,6 +542,27 @@ class IndoorBaseline extends Equatable {
   /// Battery temperature at lock-in.
   final double? batteryCelsius;
 
+  /// Battery current at lock-in, microamps.
+  final int? batteryCurrentMicroamps;
+
+  /// Battery voltage at lock-in, millivolts.
+  final int? batteryVoltageMillivolts;
+
+  /// Load proxy at lock-in.
+  final double? powerWatts;
+
+  /// `dT_batt/dt` at lock-in.
+  final double? dBatteryCelsiusPerSecond;
+
+  /// Android thermal status at lock-in.
+  final int? thermalStatus;
+
+  /// Indoor estimate at lock-in.
+  final double? estimatedRoomCelsius;
+
+  /// Estimator confidence at lock-in.
+  final double? confidence;
+
   /// 0–1 stability of the window that produced this baseline.
   final double stability;
 
@@ -495,6 +575,13 @@ class IndoorBaseline extends Equatable {
     'selectedSensors': selectedSensors,
     'sensorValues': sensorValues,
     'batteryCelsius': batteryCelsius,
+    'batteryCurrentMicroamps': batteryCurrentMicroamps,
+    'batteryVoltageMillivolts': batteryVoltageMillivolts,
+    'powerWatts': powerWatts,
+    'dBatteryCelsiusPerSecond': dBatteryCelsiusPerSecond,
+    'thermalStatus': thermalStatus,
+    'estimatedRoomCelsius': estimatedRoomCelsius,
+    'confidence': confidence,
     'stability': stability,
     'isCharging': isCharging,
   };
@@ -509,6 +596,11 @@ class IndoorCalibrationProfile extends Equatable {
   const IndoorCalibrationProfile({
     this.points = const [],
     this.baseline,
+    this.modelVersion = currentModelVersion,
+    this.tauSeconds,
+    this.rTh,
+    this.tauChargingSeconds,
+    this.rThCharging,
   });
 
   /// Builds a profile from persisted JSON.
@@ -527,8 +619,16 @@ class IndoorCalibrationProfile extends Equatable {
               Map<String, dynamic>.from(json['baseline'] as Map),
             )
           : null,
+      modelVersion: (json['modelVersion'] as num?)?.toInt() ?? 0,
+      tauSeconds: (json['tauSeconds'] as num?)?.toDouble(),
+      rTh: (json['rTh'] as num?)?.toDouble(),
+      tauChargingSeconds: (json['tauChargingSeconds'] as num?)?.toDouble(),
+      rThCharging: (json['rThCharging'] as num?)?.toDouble(),
     );
   }
+
+  /// Current physics-model version. Older stored params are ignored.
+  static const currentModelVersion = 1;
 
   /// Empty profile.
   static const empty = IndoorCalibrationProfile();
@@ -538,6 +638,48 @@ class IndoorCalibrationProfile extends Equatable {
 
   /// Last idle baseline, if one has been learned.
   final IndoorBaseline? baseline;
+
+  /// Physics-model version this profile was fitted against.
+  final int modelVersion;
+
+  /// Learned discharging `tau` in seconds, if enough data exists.
+  final double? tauSeconds;
+
+  /// Learned discharging `R_th` in °C/W, if enough data exists.
+  final double? rTh;
+
+  /// Learned charging `tau` in seconds.
+  final double? tauChargingSeconds;
+
+  /// Learned charging `R_th` in °C/W.
+  final double? rThCharging;
+
+  /// Whether learned physics params are valid for the current algorithm.
+  bool get hasCurrentPhysicsParams =>
+      modelVersion == currentModelVersion &&
+      (tauSeconds != null || rTh != null);
+
+  /// `tau` for the current charge state, or `null` to use the default.
+  double? tauFor({required bool charging}) {
+    if (modelVersion != currentModelVersion) {
+      return null;
+    }
+    if (charging && tauChargingSeconds != null) {
+      return tauChargingSeconds;
+    }
+    return tauSeconds;
+  }
+
+  /// `R_th` for the current charge state, or `null` to use the default.
+  double? rThFor({required bool charging}) {
+    if (modelVersion != currentModelVersion) {
+      return null;
+    }
+    if (charging && rThCharging != null) {
+      return rThCharging;
+    }
+    return rTh;
+  }
 
   /// Points allowed to drive the correction model.
   List<IndoorCalibrationPoint> get modelPoints => [
@@ -552,6 +694,11 @@ class IndoorCalibrationProfile extends Equatable {
   Map<String, Object?> toJson() => {
     'points': [for (final point in points) point.toJson()],
     'baseline': baseline?.toJson(),
+    'modelVersion': modelVersion,
+    'tauSeconds': tauSeconds,
+    'rTh': rTh,
+    'tauChargingSeconds': tauChargingSeconds,
+    'rThCharging': rThCharging,
   };
 
   /// Copy with replaced fields.
@@ -559,15 +706,38 @@ class IndoorCalibrationProfile extends Equatable {
     List<IndoorCalibrationPoint>? points,
     IndoorBaseline? baseline,
     bool clearBaseline = false,
+    int? modelVersion,
+    double? tauSeconds,
+    double? rTh,
+    double? tauChargingSeconds,
+    double? rThCharging,
+    bool clearLearnedPhysics = false,
   }) {
     return IndoorCalibrationProfile(
       points: points ?? this.points,
       baseline: clearBaseline ? null : (baseline ?? this.baseline),
+      modelVersion: modelVersion ?? this.modelVersion,
+      tauSeconds: clearLearnedPhysics ? null : (tauSeconds ?? this.tauSeconds),
+      rTh: clearLearnedPhysics ? null : (rTh ?? this.rTh),
+      tauChargingSeconds: clearLearnedPhysics
+          ? null
+          : (tauChargingSeconds ?? this.tauChargingSeconds),
+      rThCharging: clearLearnedPhysics
+          ? null
+          : (rThCharging ?? this.rThCharging),
     );
   }
 
   @override
-  List<Object?> get props => [points, baseline];
+  List<Object?> get props => [
+    points,
+    baseline,
+    modelVersion,
+    tauSeconds,
+    rTh,
+    tauChargingSeconds,
+    rThCharging,
+  ];
 }
 
 /// Running per-zone samples used for scoring.
@@ -795,8 +965,12 @@ class IndoorEstimatorConfig extends Equatable {
     this.emaTimeConstant = const Duration(minutes: 8),
     this.historyLimit = 24,
     this.maxCalibrationPoints = 12,
-    this.batteryCouplingKPerSecond = 1 / 600,
-    this.batterySelfHeatCoefficient = 0.8,
+    this.defaultTauSeconds = 600,
+    this.defaultRTh = 0.8,
+    this.minTauSeconds = 120,
+    this.maxTauSeconds = 1800,
+    this.minRTh = 0.15,
+    this.maxRTh = 3.5,
     this.maxLagCorrectionCelsius = 5,
     this.maxSelfHeatCorrectionCelsius = 8,
     this.minBatteryDerivativeDuration = const Duration(seconds: 20),
@@ -824,20 +998,28 @@ class IndoorEstimatorConfig extends Equatable {
   /// Cap on stored calibration points.
   final int maxCalibrationPoints;
 
-  /// Thermal coupling `k` in 1/seconds for
-  /// `T_room = T_batt + (1/k) * dT_batt/dt`.
-  ///
-  /// Default `1/600` is a 10-minute battery-to-ambient time constant.
-  final double batteryCouplingKPerSecond;
+  /// Default thermal time constant `tau` in seconds (10 minutes).
+  final double defaultTauSeconds;
 
-  /// Self-heating coefficient `c` in °C/W for
-  /// `T_room = T_batt - (c * I * V)`.
-  final double batterySelfHeatCoefficient;
+  /// Default thermal resistance `R_th` in °C/W.
+  final double defaultRTh;
 
-  /// Clamp for `(1/k) * dT_batt/dt`.
+  /// Lower bound for learned `tau`.
+  final double minTauSeconds;
+
+  /// Upper bound for learned `tau`.
+  final double maxTauSeconds;
+
+  /// Lower bound for learned `R_th`.
+  final double minRTh;
+
+  /// Upper bound for learned `R_th`.
+  final double maxRTh;
+
+  /// Clamp for `tau * dT_batt/dt`.
   final double maxLagCorrectionCelsius;
 
-  /// Clamp for `c * I * V`.
+  /// Clamp for `R_th * P`.
   final double maxSelfHeatCorrectionCelsius;
 
   /// Minimum interval before `dT_batt/dt` is recomputed.
@@ -854,8 +1036,12 @@ class IndoorEstimatorConfig extends Equatable {
     emaTimeConstant,
     historyLimit,
     maxCalibrationPoints,
-    batteryCouplingKPerSecond,
-    batterySelfHeatCoefficient,
+    defaultTauSeconds,
+    defaultRTh,
+    minTauSeconds,
+    maxTauSeconds,
+    minRTh,
+    maxRTh,
     maxLagCorrectionCelsius,
     maxSelfHeatCorrectionCelsius,
     minBatteryDerivativeDuration,
@@ -897,4 +1083,40 @@ class CalibrationConditionChecker {
     }
     return CalibrationCondition.good;
   }
+
+  /// 0–1 quality of [snapshot] for a calibration point.
+  double qualityScore(ThermalSnapshot snapshot) {
+    if (inspect(snapshot) == CalibrationCondition.poor) {
+      return 0.35;
+    }
+    return 0.9;
+  }
+}
+
+String _celsius(double? value) {
+  if (value == null) {
+    return 'n/a';
+  }
+  return '${value.toStringAsFixed(1)}°C';
+}
+
+String _milliAmps(double? amps) {
+  if (amps == null) {
+    return 'unavailable';
+  }
+  return '${(amps * 1000).toStringAsFixed(0)} mA';
+}
+
+String _volts(double? volts) {
+  if (volts == null) {
+    return 'unavailable';
+  }
+  return '${volts.toStringAsFixed(3)} V';
+}
+
+String _watts(bool? available, double? watts) {
+  if (available != true || watts == null) {
+    return 'unavailable';
+  }
+  return '${watts.toStringAsFixed(2)} W';
 }

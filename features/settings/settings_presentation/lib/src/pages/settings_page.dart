@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:settings_presentation/src/cubit/settings_cubit.dart';
 import 'package:settings_presentation/src/cubit/settings_state.dart';
+import 'package:settings_presentation/src/format/refresh_interval_label.dart';
 import 'package:settings_presentation/src/pages/indoor_calibration.dart';
 import 'package:ui_kit/ui_kit.dart';
 
@@ -143,6 +144,7 @@ class _SettingsFormState extends State<_SettingsForm> {
   late double _indoorOffsetCelsius;
   late IndoorTemperaturePreference _indoorTemperaturePreference;
   late double? _manualIndoorTemperatureCelsius;
+  late Duration _refreshInterval;
 
   @override
   void initState() {
@@ -155,6 +157,7 @@ class _SettingsFormState extends State<_SettingsForm> {
     _indoorTemperaturePreference = widget.initial.indoorTemperaturePreference;
     _manualIndoorTemperatureCelsius =
         widget.initial.manualIndoorTemperatureCelsius;
+    _refreshInterval = RefreshInterval.clamp(widget.initial.refreshInterval);
   }
 
   String _formatCelsius(double celsius) {
@@ -174,7 +177,74 @@ class _SettingsFormState extends State<_SettingsForm> {
         indoorOffsetCelsius: _indoorOffsetCelsius,
         indoorTemperaturePreference: _indoorTemperaturePreference,
         manualIndoorTemperatureCelsius: _manualIndoorTemperatureCelsius,
+        refreshInterval: _refreshInterval,
       ),
+    );
+  }
+
+  Future<void> _pickRefreshInterval(BuildContext context) async {
+    final l10n = context.l10n;
+    final selected = await showDialog<Duration>(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: GlassCard(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(dialogContext).height * 0.7,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.selectRefreshInterval,
+                    style: const TextStyle(
+                      color: GlassTokens.onGlass,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: RefreshInterval.available.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final interval = RefreshInterval.available[index];
+                        return GlassSelectTile(
+                          title: refreshIntervalLabel(interval, l10n),
+                          selected: interval == _refreshInterval,
+                          onTap: () => Navigator.of(dialogContext).pop(
+                            interval,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    if (selected == null || !context.mounted) {
+      return;
+    }
+    await _applyRefreshInterval(selected);
+  }
+
+  Future<void> _applyRefreshInterval(Duration interval) async {
+    final clamped = RefreshInterval.clamp(interval);
+    setState(() => _refreshInterval = clamped);
+    final current =
+        context.read<SettingsCubit>().state.settings ?? widget.initial;
+    await context.read<SettingsCubit>().save(
+      current.copyWith(refreshInterval: clamped),
     );
   }
 
@@ -205,6 +275,35 @@ class _SettingsFormState extends State<_SettingsForm> {
                           ? Units.celsius
                           : Units.fahrenheit,
                     ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            GlassCard(
+              key: const Key('refresh-interval-tile'),
+              onTap: () => unawaited(_pickRefreshInterval(context)),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _SectionLabel(l10n.refreshInterval),
+                        const SizedBox(height: 8),
+                        Text(
+                          refreshIntervalLabel(_refreshInterval, l10n),
+                          style: const TextStyle(
+                            color: GlassTokens.onGlassMuted,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: GlassTokens.onGlassMuted,
                   ),
                 ],
               ),

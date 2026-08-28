@@ -1,60 +1,57 @@
-/// Converts battery temperature into an estimated room temperature.
+/// Converts battery temperature into a physics-based room estimate.
 ///
-/// Combines Newton's cooling lag
-/// `T_room = T_batt + (1/k) * dT_batt/dt`
-/// with electrical self-heating
-/// `T_room = T_batt - (c * I * V)`
-/// into the single model
-/// `T_room = T_batt + (1/k) * dT_batt/dt - (c * I * V)`.
+/// First-order thermal model:
+/// `dT_batt/dt = (T_room - T_batt + R_th * P) / tau`
+/// therefore
+/// `T_room = T_batt + tau * dT_batt/dt - R_th * P`.
+///
+/// `P` is a *load proxy* (`|I| * V`), not claimed to be battery heat.
+/// When `P` is unavailable the heat term is omitted — it is not treated
+/// as zero with fake certainty.
 class BatteryRoomTemperatureModel {
   /// Creates a battery-to-room model.
   const BatteryRoomTemperatureModel({
-    required this.couplingKPerSecond,
-    required this.selfHeatCoefficient,
+    required this.tauSeconds,
+    required this.rTh,
     this.maxLagCorrectionCelsius = 5,
     this.maxSelfHeatCorrectionCelsius = 8,
   });
 
-  /// Thermal coupling `k` in 1/seconds (`τ = 1/k`).
-  final double couplingKPerSecond;
+  /// Thermal time constant `tau` in seconds.
+  final double tauSeconds;
 
-  /// Self-heating coefficient `c` in °C per watt.
-  final double selfHeatCoefficient;
+  /// Effective thermal resistance `R_th` in °C/W.
+  final double rTh;
 
-  /// Clamp for the lag term `(1/k) * dT/dt`.
+  /// Clamp for the lag term `tau * dT/dt`.
   final double maxLagCorrectionCelsius;
 
-  /// Clamp for the heating term `c * I * V`.
+  /// Clamp for the heating term `R_th * P`.
   final double maxSelfHeatCorrectionCelsius;
 
-  /// Evaluates both equations for one sample.
+  /// Evaluates the model for one sample.
   BatteryRoomTemperatureTerms evaluate({
     required double batteryCelsius,
     double dBatteryCelsiusPerSecond = 0,
-    double currentAmps = 0,
-    double voltageVolts = 0,
+    double? powerWatts,
   }) {
-    final k = couplingKPerSecond;
-    final lag = k > 0 && k.isFinite
-        ? (1 / k) * dBatteryCelsiusPerSecond
-        : 0.0;
-    final heat =
-        selfHeatCoefficient * currentAmps.abs() * voltageVolts.abs();
+    final tau = tauSeconds > 0 && tauSeconds.isFinite ? tauSeconds : 0.0;
+    final lag = tau * dBatteryCelsiusPerSecond;
+    final powerAvailable = powerWatts != null && powerWatts.isFinite;
+    final heat = powerAvailable ? rTh * powerWatts : 0.0;
     final clampedLag = _clamp(
       lag,
       -maxLagCorrectionCelsius,
       maxLagCorrectionCelsius,
     );
-    final clampedHeat = _clamp(
-      heat,
-      0,
-      maxSelfHeatCorrectionCelsius,
-    );
+    final clampedHeat = _clamp(heat, 0, maxSelfHeatCorrectionCelsius);
     return BatteryRoomTemperatureTerms(
       batteryCelsius: batteryCelsius,
       dBatteryCelsiusPerSecond: dBatteryCelsiusPerSecond,
-      currentAmps: currentAmps.abs(),
-      voltageVolts: voltageVolts.abs(),
+      powerWatts: powerAvailable ? powerWatts : null,
+      powerAvailable: powerAvailable,
+      tauSeconds: tau,
+      rTh: rTh,
       lagCorrectionCelsius: clampedLag,
       selfHeatCorrectionCelsius: clampedHeat,
       roomCelsius: batteryCelsius + clampedLag - clampedHeat,
@@ -78,8 +75,10 @@ class BatteryRoomTemperatureTerms {
   const BatteryRoomTemperatureTerms({
     required this.batteryCelsius,
     required this.dBatteryCelsiusPerSecond,
-    required this.currentAmps,
-    required this.voltageVolts,
+    required this.powerWatts,
+    required this.powerAvailable,
+    required this.tauSeconds,
+    required this.rTh,
     required this.lagCorrectionCelsius,
     required this.selfHeatCorrectionCelsius,
     required this.roomCelsius,
@@ -91,29 +90,34 @@ class BatteryRoomTemperatureTerms {
   /// `dT_batt/dt` in °C/s.
   final double dBatteryCelsiusPerSecond;
 
-  /// `|I|` in amps.
-  final double currentAmps;
+  /// Load proxy `P = |I| * V` in watts, or `null` when unavailable.
+  final double? powerWatts;
 
-  /// `|V|` in volts.
-  final double voltageVolts;
+  /// Whether [powerWatts] was observed (not invented).
+  final bool powerAvailable;
 
-  /// `(1/k) * dT_batt/dt` after clamping.
+  /// `tau` used for this sample.
+  final double tauSeconds;
+
+  /// `R_th` used for this sample.
+  final double rTh;
+
+  /// `tau * dT_batt/dt` after clamping.
   final double lagCorrectionCelsius;
 
-  /// `c * I * V` after clamping.
+  /// `R_th * P` after clamping, or 0 when [powerAvailable] is false.
   final double selfHeatCorrectionCelsius;
 
   /// Combined `T_room`.
   final double roomCelsius;
-
-  /// Instantaneous electrical power `I * V`.
-  double get powerWatts => currentAmps * voltageVolts;
 }
 
 /// Finite-difference helper for `dT_batt/dt`.
 ///
 /// Returns `null` until two battery samples exist so the first real
 /// derivative is used raw instead of being EMA'd toward zero.
+/// Samples closer together than [minSampleDuration] keep the previous
+/// derivative rather than inventing a noisy spike.
 double? batteryTemperatureDerivativePerSecond({
   required double batteryCelsius,
   required DateTime at,

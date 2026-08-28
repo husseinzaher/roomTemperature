@@ -72,5 +72,26 @@
   "weatherRadar": "Weather Radar",
   "insideHelpBody": "Indoor temperature is estimated on-device from local thermal sensors, with no internet or location required. Calibrate it in Settings against a real thermometer. When the phone has an ambient or Bluetooth sensor, that reading is used directly.",
   "outsideHelpBody": "Outdoor conditions come from Open-Meteo for your current location, and refresh when you pull down or tap refresh.",
-  "close": "Close"
+  "close": "Close",
+  "refreshInterval": "Refresh interval",
+  "selectRefreshInterval": "Select refresh interval",
+  "nextUpdate": "Next update",
+  "refreshIntervalOneMinute": "1 minute",
+  "refreshIntervalMinutes": "{count} minutes",
+  "@refreshIntervalMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "refreshIntervalOneHour": "1 hour",
+  "refreshIntervalHours": "{count} hours",
+  "@refreshIntervalHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

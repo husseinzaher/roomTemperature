@@ -3,6 +3,7 @@ library;
 
 export 'src/commands/update_settings_command.dart';
 export 'src/models/indoor_temperature_preference.dart';
+export 'src/models/refresh_interval.dart';
 export 'src/models/threshold_settings.dart';
 export 'src/models/units.dart';
 export 'src/models/user_settings.dart';

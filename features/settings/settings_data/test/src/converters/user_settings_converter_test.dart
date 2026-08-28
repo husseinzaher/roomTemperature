@@ -27,15 +27,16 @@ void main() {
           map,
           {
             'units': 'fahrenheit',
-            'thresholdMinC': 15.0,
-            'thresholdMaxC': 25.0,
-            'thresholdEnabled': true,
-            'indoorOffsetC': 1.5,
+            'thresholdMinC': '15.0',
+            'thresholdMaxC': '25.0',
+            'thresholdEnabled': 'true',
+            'indoorOffsetC': '1.5',
             'indoorTemperatureSource': 'batteryTemperature',
-            'manualIndoorTempC': 22.5,
+            'manualIndoorTempC': '22.5',
+            'refreshIntervalMinutes': '15',
           },
         );
-        expect(map.keys, hasLength(7));
+        expect(map.keys, hasLength(8));
       });
 
       test('encodes celsius units as "celsius"', () {
@@ -66,7 +67,7 @@ void main() {
       });
 
       test('falls back field-by-field when only some fields are present', () {
-        final result = converter.fromMap(const {'indoorOffsetC': 3.0});
+        final result = converter.fromMap(const {'indoorOffsetC': '3.0'});
         final defaults = UserSettings.defaults();
 
         expect(result.units, defaults.units);
@@ -83,16 +84,10 @@ void main() {
         expect(result.units, UserSettings.defaults().units);
       });
 
-      test('falls back when units is not a string', () {
-        final result = converter.fromMap(const {'units': 42});
-        expect(result.units, UserSettings.defaults().units);
-      });
-
       test('falls back when numeric fields are malformed', () {
         final result = converter.fromMap(const {
           'thresholdMinC': 'not-a-number',
-          'thresholdMaxC': <String, dynamic>{},
-          'indoorOffsetC': null,
+          'thresholdMaxC': 'oops',
         });
         final defaults = UserSettings.defaults();
 
@@ -103,9 +98,9 @@ void main() {
 
       test('accepts integer values for numeric fields', () {
         final result = converter.fromMap(const {
-          'thresholdMinC': 18,
-          'thresholdMaxC': 28,
-          'indoorOffsetC': 2,
+          'thresholdMinC': '18',
+          'thresholdMaxC': '28',
+          'indoorOffsetC': '2',
         });
 
         expect(result.threshold.minCelsius, 18.0);
@@ -113,8 +108,8 @@ void main() {
         expect(result.indoorOffsetCelsius, 2.0);
       });
 
-      test('falls back when thresholdEnabled is not a bool', () {
-        final result = converter.fromMap(const {'thresholdEnabled': 'true'});
+      test('falls back when thresholdEnabled is unrecognized', () {
+        final result = converter.fromMap(const {'thresholdEnabled': 'yes'});
         expect(
           result.threshold.enabled,
           UserSettings.defaults().threshold.enabled,
@@ -132,10 +127,39 @@ void main() {
         );
       });
 
-      test('accepts integer manual temperature values', () {
-        final result = converter.fromMap(const {'manualIndoorTempC': 21});
+      test('falls back to 15 minutes for invalid refresh intervals', () {
+        expect(
+          converter
+              .fromMap(const {'refreshIntervalMinutes': '0'})
+              .refreshInterval,
+          const Duration(minutes: 15),
+        );
+        expect(
+          converter
+              .fromMap(const {'refreshIntervalMinutes': '9999'})
+              .refreshInterval,
+          const Duration(minutes: 15),
+        );
+      });
 
-        expect(result.manualIndoorTemperatureCelsius, 21.0);
+      test('round-trips a one-minute refresh interval', () {
+        final settings = UserSettings.defaults().copyWith(
+          refreshInterval: const Duration(minutes: 1),
+        );
+        expect(
+          converter.fromMap(converter.toMap(settings)).refreshInterval,
+          const Duration(minutes: 1),
+        );
+      });
+
+      test('round-trips a 24-hour refresh interval', () {
+        final settings = UserSettings.defaults().copyWith(
+          refreshInterval: const Duration(hours: 24),
+        );
+        expect(
+          converter.fromMap(converter.toMap(settings)).refreshInterval,
+          const Duration(hours: 24),
+        );
       });
     });
   });

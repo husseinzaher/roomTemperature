@@ -41,6 +41,12 @@ class UserSettingsConverter {
   /// An empty value means "no manual temperature entered".
   static const String manualIndoorTemperatureKey = 'manualIndoorTempC';
 
+  /// The settings key for [UserSettings.refreshInterval], stored as minutes.
+  static const String refreshIntervalMinutesKey = 'refreshIntervalMinutes';
+
+  /// The settings key for [UserSettings.placeHistoryEnabled].
+  static const String placeHistoryEnabledKey = 'placeHistoryEnabled';
+
   /// Builds a [UserSettings] from the stored key/value [values].
   ///
   /// Any missing or malformed value falls back to the matching field of
@@ -80,6 +86,13 @@ class UserSettingsConverter {
       manualIndoorTemperatureCelsius:
           _nullableDouble(values[manualIndoorTemperatureKey]) ??
           defaults.manualIndoorTemperatureCelsius,
+      refreshInterval: RefreshInterval.fromMinutes(
+        _intOrNull(values[refreshIntervalMinutesKey]),
+      ),
+      placeHistoryEnabled: _boolOrDefault(
+        values[placeHistoryEnabledKey],
+        defaults.placeHistoryEnabled,
+      ),
     );
   }
 
@@ -93,6 +106,8 @@ class UserSettingsConverter {
     indoorTemperaturePreferenceKey: settings.indoorTemperaturePreference.name,
     manualIndoorTemperatureKey:
         settings.manualIndoorTemperatureCelsius?.toString() ?? '',
+    refreshIntervalMinutesKey: '${settings.refreshInterval.inMinutes}',
+    placeHistoryEnabledKey: '${settings.placeHistoryEnabled}',
   };
 
   T _enumOrDefault<T extends Enum>(
@@ -117,7 +132,16 @@ class UserSettingsConverter {
   };
 
   double? _nullableDouble(String? value) {
-    if (value == null) return null;
+    if (value == null) {
+      return null;
+    }
     return double.tryParse(value);
+  }
+
+  int? _intOrNull(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return int.tryParse(value) ?? double.tryParse(value)?.round();
   }
 }

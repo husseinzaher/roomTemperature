@@ -8,9 +8,9 @@ import 'package:temperature_domain/src/indoor_estimator/thermal_zone_classifier.
 /// Local, deterministic indoor-temperature estimator.
 ///
 /// Uses only [ThermalSnapshot] signals. Never reads weather, location, or
-/// the network. When battery temperature is available, room temperature is
-/// computed from
-/// `T_room = T_batt + (1/k) * dT_batt/dt - (c * I * V)`.
+/// the network. Room temperature is fused from
+/// `T_room = T_batt + tau * dT_batt/dt - R_th * P`
+/// and scored environmental thermal proxies.
 class IndoorTemperatureEstimator {
   /// Creates an estimator.
   const IndoorTemperatureEstimator({
@@ -61,10 +61,14 @@ class IndoorTemperatureEstimator {
     final physics = _batteryPhysics(
       snapshot: snapshot,
       derivativePerSecond: derivative ?? 0,
+      profile: profile,
     );
-    final raw = physics?.roomCelsius ??
-        _zoneRawEstimate(snapshot: snapshot, selected: top);
-    if (raw == null) {
+    final fused = _fuse(
+      physics: physics,
+      derivativeAvailable: derivative != null,
+      selected: top,
+    );
+    if (fused == null) {
       return IndoorEstimateStep(
         state: state.copyWith(zoneHistories: histories),
         profile: profile,
@@ -77,7 +81,7 @@ class IndoorTemperatureEstimator {
       current: cpu,
     );
     final calibrated = _applyCalibration(
-      raw: raw,
+      raw: fused.temperature,
       snapshot: snapshot,
       profile: profile,
       cpuSpiked: cpuSpiked,
@@ -89,7 +93,7 @@ class IndoorTemperatureEstimator {
       cpuSpiked: cpuSpiked,
       proxyDelta: _proxyDelta(
         previous: state.lastSelectedProxyCelsius,
-        current: raw,
+        current: fused.temperature,
       ),
     );
     final bounded = _boundToPlausible(smoothed);
@@ -99,6 +103,8 @@ class IndoorTemperatureEstimator {
       scored: scored,
       profile: profile,
       cpuSpiked: cpuSpiked,
+      physics: physics,
+      fusedSensorCount: fused.sensors.length,
     );
     final nextProfile = _maybeLearnBaseline(
       snapshot: snapshot,
@@ -106,6 +112,10 @@ class IndoorTemperatureEstimator {
       profile: profile,
       selected: top,
       histories: histories,
+      estimatedRoomCelsius: bounded,
+      confidence: confidence,
+      derivativePerSecond: derivative,
+      powerWatts: physics?.powerWatts,
     );
     final nextState = IndoorEstimatorState(
       emaCelsius: bounded,
@@ -117,7 +127,7 @@ class IndoorTemperatureEstimator {
       ),
       zoneHistories: histories,
       lastCpuCelsius: cpu,
-      lastSelectedProxyCelsius: raw,
+      lastSelectedProxyCelsius: fused.temperature,
       lastBatteryCelsius:
           snapshot.batteryCelsius ?? state.lastBatteryCelsius,
       lastBatterySampledAt: snapshot.batteryCelsius != null
@@ -127,10 +137,15 @@ class IndoorTemperatureEstimator {
           ? derivative
           : state.smoothedBatteryDerivativePerSecond,
     );
-    final offset = bounded - raw;
-    final selectedSensors = physics != null
-        ? const ['battery']
-        : [for (final zone in top) zone.name];
+    final offset = bounded - fused.temperature;
+    final selectedSensors = fused.sensors;
+    final currentAmps = snapshot.batteryCurrentMicroamps == null
+        ? null
+        : snapshot.batteryCurrentMicroamps!.abs() / 1e6;
+    final voltageVolts = snapshot.batteryVoltageMillivolts == null ||
+            snapshot.batteryVoltageMillivolts! <= 0
+        ? null
+        : snapshot.batteryVoltageMillivolts! / 1000.0;
     final result = IndoorEstimateResult(
       temperatureCelsius: bounded,
       confidence: confidence,
@@ -142,7 +157,7 @@ class IndoorTemperatureEstimator {
         thermalStatus: snapshot.thermalStatus,
         zones: scored,
         selectedSensors: selectedSensors,
-        rawEstimateCelsius: raw,
+        rawEstimateCelsius: fused.temperature,
         finalEstimateCelsius: bounded,
         confidence: confidence,
         calibrationApplied: calibrated.applied,
@@ -158,12 +173,16 @@ class IndoorTemperatureEstimator {
           hasCalibration: profile.hasCalibration,
           hasBaseline: nextProfile.baseline != null,
         ),
-        batteryDerivativePerSecond:
-            physics?.dBatteryCelsiusPerSecond,
+        batteryDerivativePerSecond: derivative,
         lagCorrectionCelsius: physics?.lagCorrectionCelsius,
         selfHeatCorrectionCelsius: physics?.selfHeatCorrectionCelsius,
-        batteryCurrentAmps: physics?.currentAmps,
-        batteryVoltageVolts: physics?.voltageVolts,
+        batteryCurrentAmps: currentAmps,
+        batteryVoltageVolts: voltageVolts,
+        powerWatts: physics?.powerWatts ?? snapshot.batteryPowerWatts,
+        powerAvailable: physics?.powerAvailable,
+        physicsEstimateCelsius: physics?.roomCelsius,
+        tauSeconds: physics?.tauSeconds,
+        rTh: physics?.rTh,
       ),
     );
     return IndoorEstimateStep(
@@ -188,6 +207,9 @@ class IndoorTemperatureEstimator {
     final poor =
         const CalibrationConditionChecker().inspect(snapshot) ==
         CalibrationCondition.poor;
+    final quality = const CalibrationConditionChecker().qualityScore(
+      snapshot,
+    );
     final raw = current.debug.rawEstimateCelsius ?? current.temperatureCelsius;
     final point = IndoorCalibrationPoint(
       timestamp: snapshot.timestamp,
@@ -208,12 +230,17 @@ class IndoorTemperatureEstimator {
       confidence: current.confidence,
       usedForModel: true,
       poorConditions: poor,
+      batteryCurrentMicroamps: snapshot.batteryCurrentMicroamps,
+      batteryVoltageMillivolts: snapshot.batteryVoltageMillivolts,
+      powerWatts: snapshot.batteryPowerWatts,
+      dBatteryCelsiusPerSecond: current.debug.batteryDerivativePerSecond,
+      qualityScore: quality,
     );
     final points = [...profile.points, point];
     final trimmed = points.length > config.maxCalibrationPoints
         ? points.sublist(points.length - config.maxCalibrationPoints)
         : points;
-    return profile.copyWith(points: trimmed);
+    return _refitPhysics(profile.copyWith(points: trimmed));
   }
 
   /// Drops all calibration points. Keeps the idle baseline.
@@ -438,35 +465,59 @@ class IndoorTemperatureEstimator {
     );
   }
 
-  double? _zoneRawEstimate({
-    required ThermalSnapshot snapshot,
+  ({double temperature, List<String> sensors})? _fuse({
+    required BatteryRoomTemperatureTerms? physics,
+    required bool derivativeAvailable,
     required List<ScoredThermalZone> selected,
   }) {
-    if (selected.isNotEmpty) {
-      return _weightedMedian([
-        for (final zone in selected)
-          (value: zone.temperatureCelsius, weight: zone.environmentScore),
-      ]);
+    final items = <({double value, double weight, String name})>[];
+    if (physics != null) {
+      var weight = 0.28;
+      if (physics.powerAvailable) {
+        weight += 0.18;
+      }
+      if (derivativeAvailable) {
+        weight += 0.1;
+      }
+      items.add((
+        value: physics.roomCelsius,
+        weight: weight,
+        name: 'battery',
+      ));
     }
-
-    final usable = [
-      for (final zone in snapshot.zones)
-        if (_isFinite(zone.temperatureCelsius) &&
-            zone.temperatureCelsius >= 5 &&
-            zone.temperatureCelsius <= 45 &&
-            classifier.classifyName(zone.name) != ThermalZoneClass.component)
-          zone.temperatureCelsius,
+    for (final zone in selected.take(3)) {
+      items.add((
+        value: zone.temperatureCelsius,
+        weight: zone.environmentScore,
+        name: zone.name,
+      ));
+    }
+    if (items.isEmpty) {
+      return null;
+    }
+    var numerator = 0.0;
+    var denominator = 0.0;
+    for (final item in items) {
+      numerator += item.value * item.weight;
+      denominator += item.weight;
+    }
+    final temperature = denominator <= 0
+        ? items.first.value
+        : numerator / denominator;
+    final sensors = [
+      for (final item in items)
+        if (item.weight >= 0.2) item.name,
     ];
-    if (usable.isNotEmpty) {
-      usable.sort();
-      return usable.first;
-    }
-    return null;
+    return (
+      temperature: temperature,
+      sensors: sensors.isEmpty ? [items.first.name] : sensors,
+    );
   }
 
   BatteryRoomTemperatureTerms? _batteryPhysics({
     required ThermalSnapshot snapshot,
     required double derivativePerSecond,
+    required IndoorCalibrationProfile profile,
   }) {
     final battery = snapshot.batteryCelsius;
     if (battery == null ||
@@ -475,24 +526,19 @@ class IndoorTemperatureEstimator {
         battery > _maxValidZoneCelsius) {
       return null;
     }
-    final currentMicroamps = snapshot.batteryCurrentMicroamps;
-    final voltageMillivolts = snapshot.batteryVoltageMillivolts;
-    final currentAmps =
-        currentMicroamps == null ? 0.0 : currentMicroamps.abs() / 1e6;
-    final voltageVolts =
-        voltageMillivolts == null || voltageMillivolts <= 0
-        ? 0.0
-        : voltageMillivolts / 1000.0;
+    final charging = snapshot.isCharging;
+    final tau =
+        profile.tauFor(charging: charging) ?? config.defaultTauSeconds;
+    final rTh = profile.rThFor(charging: charging) ?? config.defaultRTh;
     return BatteryRoomTemperatureModel(
-      couplingKPerSecond: config.batteryCouplingKPerSecond,
-      selfHeatCoefficient: config.batterySelfHeatCoefficient,
+      tauSeconds: tau,
+      rTh: rTh,
       maxLagCorrectionCelsius: config.maxLagCorrectionCelsius,
       maxSelfHeatCorrectionCelsius: config.maxSelfHeatCorrectionCelsius,
     ).evaluate(
       batteryCelsius: battery,
       dBatteryCelsiusPerSecond: derivativePerSecond,
-      currentAmps: currentAmps,
-      voltageVolts: voltageVolts,
+      powerWatts: snapshot.batteryPowerWatts,
     );
   }
 
@@ -613,6 +659,8 @@ class IndoorTemperatureEstimator {
     required List<ScoredThermalZone> scored,
     required IndoorCalibrationProfile profile,
     required bool cpuSpiked,
+    required BatteryRoomTemperatureTerms? physics,
+    required int fusedSensorCount,
   }) {
     var score = 0.22;
     score += 0.16 * (selected.length / 3).clamp(0.0, 1.0);
@@ -623,8 +671,14 @@ class IndoorTemperatureEstimator {
     } else {
       score -= 0.04;
     }
+    if (fusedSensorCount >= 2) {
+      score += 0.08;
+    }
     if (profile.hasCalibration) {
       score += 0.22;
+    }
+    if (profile.hasCurrentPhysicsParams) {
+      score += 0.06;
     }
     if (profile.baseline != null) {
       score += 0.06 * profile.baseline!.stability.clamp(0.0, 1.0);
@@ -632,6 +686,12 @@ class IndoorTemperatureEstimator {
     final onlyBattery = selected.isEmpty && snapshot.batteryCelsius != null;
     if (onlyBattery) {
       score -= 0.18;
+    }
+    if (physics != null && physics.powerAvailable) {
+      score += 0.06;
+    }
+    if (physics != null && !physics.powerAvailable) {
+      score -= 0.12;
     }
     if (snapshot.isCharging) {
       score -= 0.14;
@@ -652,10 +712,115 @@ class IndoorTemperatureEstimator {
       for (final zone in scored)
         if (zone.rejectReason == null) zone,
     ];
-    if (reliable.isEmpty) {
+    if (reliable.isEmpty && physics == null) {
       score -= 0.1;
     }
     return score.clamp(0.05, 0.97);
+  }
+
+  IndoorCalibrationProfile _refitPhysics(
+    IndoorCalibrationProfile profile,
+  ) {
+    final discharging = [
+      for (final point in profile.points)
+        if (point.usedForModel && !point.poorConditions && !point.isCharging)
+          point,
+    ];
+    final charging = [
+      for (final point in profile.points)
+        if (point.usedForModel && !point.poorConditions && point.isCharging)
+          point,
+    ];
+    final dischargeFit = _fitTauRTh(discharging);
+    final chargeFit = _fitTauRTh(charging);
+    return IndoorCalibrationProfile(
+      points: profile.points,
+      baseline: profile.baseline,
+      tauSeconds: dischargeFit.tau,
+      rTh: dischargeFit.rTh,
+      tauChargingSeconds: chargeFit.tau,
+      rThCharging: chargeFit.rTh,
+    );
+  }
+
+  ({double? tau, double? rTh}) _fitTauRTh(
+    List<IndoorCalibrationPoint> points,
+  ) {
+    final usable = [
+      for (final point in points)
+        if (point.batteryCelsius != null &&
+            point.powerWatts != null &&
+            point.powerWatts! >= 0.05)
+          point,
+    ];
+    if (usable.length < 2) {
+      return (tau: null, rTh: null);
+    }
+
+    final dTs = [
+      for (final point in usable) point.dBatteryCelsiusPerSecond ?? 0.0,
+    ];
+    final dTRange = _range(dTs);
+    if (usable.length >= 3 && dTRange >= 0.001) {
+      final two = _olsTwoParam(
+        u: dTs,
+        v: [for (final point in usable) -point.powerWatts!],
+        y: [
+          for (final point in usable)
+            point.actualRoomCelsius - point.batteryCelsius!,
+        ],
+      );
+      if (two != null) {
+        return (
+          tau: two.a.clamp(config.minTauSeconds, config.maxTauSeconds),
+          rTh: two.b.clamp(config.minRTh, config.maxRTh),
+        );
+      }
+    }
+
+    final tau = config.defaultTauSeconds;
+    var xy = 0.0;
+    var xx = 0.0;
+    for (final point in usable) {
+      final dT = point.dBatteryCelsiusPerSecond ?? 0;
+      final y = point.actualRoomCelsius - point.batteryCelsius! - tau * dT;
+      final x = point.powerWatts!;
+      xy += x * y;
+      xx += x * x;
+    }
+    if (xx < 1e-6) {
+      return (tau: null, rTh: null);
+    }
+    final rTh = (-xy / xx).clamp(config.minRTh, config.maxRTh);
+    return (tau: tau, rTh: rTh);
+  }
+
+  ({double a, double b})? _olsTwoParam({
+    required List<double> u,
+    required List<double> v,
+    required List<double> y,
+  }) {
+    final n = y.length;
+    if (n < 3 || u.length != n || v.length != n) {
+      return null;
+    }
+    var suu = 0.0;
+    var svv = 0.0;
+    var suv = 0.0;
+    var suy = 0.0;
+    var svy = 0.0;
+    for (var i = 0; i < n; i++) {
+      suu += u[i] * u[i];
+      svv += v[i] * v[i];
+      suv += u[i] * v[i];
+      suy += u[i] * y[i];
+      svy += v[i] * y[i];
+    }
+    final den = suu * svv - suv * suv;
+    if (den.abs() < 1e-8) {
+      return null;
+    }
+    return (a: (suy * svv - svy * suv) / den, b: (svy * suu - suy * suv) / den);
   }
 
   IndoorCalibrationProfile _maybeLearnBaseline({
@@ -664,6 +829,10 @@ class IndoorTemperatureEstimator {
     required IndoorCalibrationProfile profile,
     required List<ScoredThermalZone> selected,
     required Map<String, ZoneHistory> histories,
+    required double estimatedRoomCelsius,
+    required double confidence,
+    required double? derivativePerSecond,
+    required double? powerWatts,
   }) {
     if (!_isIdle(snapshot) || selected.isEmpty) {
       return profile;
@@ -693,6 +862,13 @@ class IndoorTemperatureEstimator {
           'battery': snapshot.batteryCelsius!,
       },
       batteryCelsius: snapshot.batteryCelsius,
+      batteryCurrentMicroamps: snapshot.batteryCurrentMicroamps,
+      batteryVoltageMillivolts: snapshot.batteryVoltageMillivolts,
+      powerWatts: powerWatts,
+      dBatteryCelsiusPerSecond: derivativePerSecond,
+      thermalStatus: snapshot.thermalStatus,
+      estimatedRoomCelsius: estimatedRoomCelsius,
+      confidence: confidence,
       stability: (1 / (1 + _variance(proxyHistory.samples) * 6)).clamp(
         0.0,
         1.0,
@@ -853,25 +1029,6 @@ double? _median(List<double> samples) {
     return sorted[mid];
   }
   return (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-double _weightedMedian(List<({double value, double weight})> items) {
-  if (items.isEmpty) {
-    return 0;
-  }
-  final sorted = [...items]..sort((a, b) => a.value.compareTo(b.value));
-  final total = sorted.fold<double>(0, (sum, item) => sum + item.weight);
-  if (total <= 0) {
-    return sorted[sorted.length ~/ 2].value;
-  }
-  var cumulative = 0.0;
-  for (final item in sorted) {
-    cumulative += item.weight;
-    if (cumulative >= total / 2) {
-      return item.value;
-    }
-  }
-  return sorted.last.value;
 }
 
 double? _pearson(List<double>? x, List<double>? y) {

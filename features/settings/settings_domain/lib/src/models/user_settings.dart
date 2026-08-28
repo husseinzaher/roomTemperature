@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:settings_domain/src/models/indoor_temperature_preference.dart';
+import 'package:settings_domain/src/models/refresh_interval.dart';
 import 'package:settings_domain/src/models/threshold_settings.dart';
 import 'package:settings_domain/src/models/units.dart';
 
@@ -21,6 +22,8 @@ class UserSettings extends Equatable {
     required this.indoorOffsetCelsius,
     this.indoorTemperaturePreference = IndoorTemperaturePreference.automatic,
     this.manualIndoorTemperatureCelsius,
+    this.refreshInterval = RefreshInterval.defaultInterval,
+    this.placeHistoryEnabled = true,
   });
 
   /// A sensible set of defaults for a brand-new user: Celsius display units,
@@ -53,6 +56,17 @@ class UserSettings extends Equatable {
   /// [indoorTemperaturePreference] is [IndoorTemperaturePreference.manual].
   final double? manualIndoorTemperatureCelsius;
 
+  /// Global data-refresh interval for the app, background work, and widget.
+  ///
+  /// Always within [RefreshInterval.minimum] and [RefreshInterval.maximum]
+  /// after load; invalid stored values fall back to
+  /// [RefreshInterval.defaultInterval].
+  final Duration refreshInterval;
+
+  /// When false, visit detection stops. Existing local history is kept
+  /// until the user deletes it.
+  final bool placeHistoryEnabled;
+
   /// Returns a copy of this [UserSettings] with the given fields replaced.
   UserSettings copyWith({
     Units? units,
@@ -60,6 +74,8 @@ class UserSettings extends Equatable {
     double? indoorOffsetCelsius,
     IndoorTemperaturePreference? indoorTemperaturePreference,
     double? manualIndoorTemperatureCelsius,
+    Duration? refreshInterval,
+    bool? placeHistoryEnabled,
   }) {
     return UserSettings(
       units: units ?? this.units,
@@ -69,6 +85,8 @@ class UserSettings extends Equatable {
           indoorTemperaturePreference ?? this.indoorTemperaturePreference,
       manualIndoorTemperatureCelsius:
           manualIndoorTemperatureCelsius ?? this.manualIndoorTemperatureCelsius,
+      refreshInterval: refreshInterval ?? this.refreshInterval,
+      placeHistoryEnabled: placeHistoryEnabled ?? this.placeHistoryEnabled,
     );
   }
 
@@ -79,5 +97,7 @@ class UserSettings extends Equatable {
     indoorOffsetCelsius,
     indoorTemperaturePreference,
     manualIndoorTemperatureCelsius,
+    refreshInterval,
+    placeHistoryEnabled,
   ];
 }

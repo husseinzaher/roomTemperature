@@ -16,6 +16,7 @@ void main() {
         IndoorTemperaturePreference.automatic,
       );
       expect(defaults.manualIndoorTemperatureCelsius, isNull);
+      expect(defaults.refreshInterval, const Duration(minutes: 15));
     });
 
     test('supports value equality', () {
@@ -67,6 +68,14 @@ void main() {
         updated.indoorTemperaturePreference,
         defaults.indoorTemperaturePreference,
       );
+      expect(updated.refreshInterval, defaults.refreshInterval);
+    });
+
+    test('copyWith replaces the refresh interval', () {
+      final updated = UserSettings.defaults().copyWith(
+        refreshInterval: const Duration(minutes: 5),
+      );
+      expect(updated.refreshInterval, const Duration(minutes: 5));
     });
   });
 }

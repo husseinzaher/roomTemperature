@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:home_widget_bridge/home_widget_bridge.dart';
 import 'package:room_temperature_app/home/home_widget_labels.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:temperature_domain/temperature_domain.dart';

@@ -9,12 +9,9 @@ import 'package:notifications_data/notifications_data.dart';
 import 'package:notifications_domain/notifications_domain.dart';
 import 'package:provider/provider.dart';
 import 'package:room_temperature_app/routing/router.dart';
-import 'package:room_temperature_app/services/ambient_sensor_service.dart';
-import 'package:room_temperature_app/services/battery_temperature_service.dart';
-import 'package:room_temperature_app/services/indoor_estimator_store.dart';
+import 'package:room_temperature_app/services/indoor_temperature_bindings.dart';
 import 'package:room_temperature_app/services/indoor_temperature_service.dart';
 import 'package:room_temperature_app/services/location_service.dart';
-import 'package:room_temperature_app/services/thermal_data_service.dart';
 import 'package:settings_data/settings_data.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:temperature_data/temperature_data.dart';
@@ -50,27 +47,9 @@ class App extends StatelessWidget {
     );
     final historyRepository = DriftHistoryRepository(database: database);
     final settingsRepository = DriftSettingsRepository(database: database);
-    const ambientSensorService = AmbientSensorService();
-    const batteryTemperatureService = BatteryTemperatureService();
-    const thermalDataService = ThermalDataService();
-    final indoorEstimatorStore = IndoorEstimatorStore(database: database);
-    final indoorTemperatureService = IndoorTemperatureService(
-      ambientProvider: const AndroidAmbientTemperatureProvider(
-        ambientSensorService,
-      ),
-      bluetoothProvider: const BluetoothTemperatureProvider(),
-      batteryProvider: const BatteryTemperatureProvider(
-        batteryTemperatureService,
-      ),
-      manualProvider: ManualTemperatureProvider(
-        () => settingsRepository
-            .lastSettingsOrDefault()
-            .manualIndoorTemperatureCelsius,
-      ),
-      thermalProvider: ThermalEstimateProvider(
-        thermalData: thermalDataService,
-        store: indoorEstimatorStore,
-      ),
+    final indoorTemperatureService = buildIndoorTemperatureService(
+      database: database,
+      settingsRepository: settingsRepository,
     );
 
     return MultiProvider(
@@ -84,12 +63,6 @@ class App extends StatelessWidget {
         Provider<INotificationSender>.value(value: notificationSender),
         Provider<HomeWidgetBridge>.value(value: const HomeWidgetBridge()),
         Provider<LocationService>.value(value: const LocationService()),
-        Provider<AmbientSensorService>.value(
-          value: ambientSensorService,
-        ),
-        Provider<BatteryTemperatureService>.value(
-          value: batteryTemperatureService,
-        ),
         Provider<IndoorTemperatureService>.value(
           value: indoorTemperatureService,
         ),

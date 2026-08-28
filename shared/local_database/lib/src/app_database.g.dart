@@ -952,15 +952,1179 @@ class SettingsRowsCompanion extends UpdateCompanion<SettingRow> {
   }
 }
 
+class $PlacesTable extends Places with TableInfo<$PlacesTable, PlaceRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PlacesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _latitudeMeta = const VerificationMeta(
+    'latitude',
+  );
+  @override
+  late final GeneratedColumn<double> latitude = GeneratedColumn<double>(
+    'latitude',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _longitudeMeta = const VerificationMeta(
+    'longitude',
+  );
+  @override
+  late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
+    'longitude',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _addressMeta = const VerificationMeta(
+    'address',
+  );
+  @override
+  late final GeneratedColumn<String> address = GeneratedColumn<String>(
+    'address',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    latitude,
+    longitude,
+    name,
+    address,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'places';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PlaceRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('latitude')) {
+      context.handle(
+        _latitudeMeta,
+        latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_latitudeMeta);
+    }
+    if (data.containsKey('longitude')) {
+      context.handle(
+        _longitudeMeta,
+        longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_longitudeMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('address')) {
+      context.handle(
+        _addressMeta,
+        address.isAcceptableOrUnknown(data['address']!, _addressMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PlaceRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PlaceRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      latitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}latitude'],
+      )!,
+      longitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}longitude'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      address: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}address'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PlacesTable createAlias(String alias) {
+    return $PlacesTable(attachedDatabase, alias);
+  }
+}
+
+class PlaceRow extends DataClass implements Insertable<PlaceRow> {
+  /// Surrogate primary key.
+  final int id;
+
+  /// Visit-cluster latitude, in degrees.
+  final double latitude;
+
+  /// Visit-cluster longitude, in degrees.
+  final double longitude;
+
+  /// Cached human-readable name, e.g. `Nasr City`.
+  final String name;
+
+  /// Optional longer address from reverse geocoding.
+  final String? address;
+
+  /// When this place cluster was first created.
+  final DateTime createdAt;
+  const PlaceRow({
+    required this.id,
+    required this.latitude,
+    required this.longitude,
+    required this.name,
+    this.address,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['latitude'] = Variable<double>(latitude);
+    map['longitude'] = Variable<double>(longitude);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || address != null) {
+      map['address'] = Variable<String>(address);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  PlacesCompanion toCompanion(bool nullToAbsent) {
+    return PlacesCompanion(
+      id: Value(id),
+      latitude: Value(latitude),
+      longitude: Value(longitude),
+      name: Value(name),
+      address: address == null && nullToAbsent
+          ? const Value.absent()
+          : Value(address),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory PlaceRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PlaceRow(
+      id: serializer.fromJson<int>(json['id']),
+      latitude: serializer.fromJson<double>(json['latitude']),
+      longitude: serializer.fromJson<double>(json['longitude']),
+      name: serializer.fromJson<String>(json['name']),
+      address: serializer.fromJson<String?>(json['address']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'latitude': serializer.toJson<double>(latitude),
+      'longitude': serializer.toJson<double>(longitude),
+      'name': serializer.toJson<String>(name),
+      'address': serializer.toJson<String?>(address),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  PlaceRow copyWith({
+    int? id,
+    double? latitude,
+    double? longitude,
+    String? name,
+    Value<String?> address = const Value.absent(),
+    DateTime? createdAt,
+  }) => PlaceRow(
+    id: id ?? this.id,
+    latitude: latitude ?? this.latitude,
+    longitude: longitude ?? this.longitude,
+    name: name ?? this.name,
+    address: address.present ? address.value : this.address,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  PlaceRow copyWithCompanion(PlacesCompanion data) {
+    return PlaceRow(
+      id: data.id.present ? data.id.value : this.id,
+      latitude: data.latitude.present ? data.latitude.value : this.latitude,
+      longitude: data.longitude.present ? data.longitude.value : this.longitude,
+      name: data.name.present ? data.name.value : this.name,
+      address: data.address.present ? data.address.value : this.address,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlaceRow(')
+          ..write('id: $id, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('name: $name, ')
+          ..write('address: $address, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, latitude, longitude, name, address, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PlaceRow &&
+          other.id == this.id &&
+          other.latitude == this.latitude &&
+          other.longitude == this.longitude &&
+          other.name == this.name &&
+          other.address == this.address &&
+          other.createdAt == this.createdAt);
+}
+
+class PlacesCompanion extends UpdateCompanion<PlaceRow> {
+  final Value<int> id;
+  final Value<double> latitude;
+  final Value<double> longitude;
+  final Value<String> name;
+  final Value<String?> address;
+  final Value<DateTime> createdAt;
+  const PlacesCompanion({
+    this.id = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.name = const Value.absent(),
+    this.address = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  PlacesCompanion.insert({
+    this.id = const Value.absent(),
+    required double latitude,
+    required double longitude,
+    required String name,
+    this.address = const Value.absent(),
+    required DateTime createdAt,
+  }) : latitude = Value(latitude),
+       longitude = Value(longitude),
+       name = Value(name),
+       createdAt = Value(createdAt);
+  static Insertable<PlaceRow> custom({
+    Expression<int>? id,
+    Expression<double>? latitude,
+    Expression<double>? longitude,
+    Expression<String>? name,
+    Expression<String>? address,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (name != null) 'name': name,
+      if (address != null) 'address': address,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  PlacesCompanion copyWith({
+    Value<int>? id,
+    Value<double>? latitude,
+    Value<double>? longitude,
+    Value<String>? name,
+    Value<String?>? address,
+    Value<DateTime>? createdAt,
+  }) {
+    return PlacesCompanion(
+      id: id ?? this.id,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      name: name ?? this.name,
+      address: address ?? this.address,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (latitude.present) {
+      map['latitude'] = Variable<double>(latitude.value);
+    }
+    if (longitude.present) {
+      map['longitude'] = Variable<double>(longitude.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (address.present) {
+      map['address'] = Variable<String>(address.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlacesCompanion(')
+          ..write('id: $id, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('name: $name, ')
+          ..write('address: $address, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PlaceVisitsTable extends PlaceVisits
+    with TableInfo<$PlaceVisitsTable, PlaceVisitRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PlaceVisitsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _placeIdMeta = const VerificationMeta(
+    'placeId',
+  );
+  @override
+  late final GeneratedColumn<int> placeId = GeneratedColumn<int>(
+    'place_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES places (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _latitudeMeta = const VerificationMeta(
+    'latitude',
+  );
+  @override
+  late final GeneratedColumn<double> latitude = GeneratedColumn<double>(
+    'latitude',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _longitudeMeta = const VerificationMeta(
+    'longitude',
+  );
+  @override
+  late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
+    'longitude',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastSeenAtMeta = const VerificationMeta(
+    'lastSeenAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSeenAt = GeneratedColumn<DateTime>(
+    'last_seen_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endedAtMeta = const VerificationMeta(
+    'endedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endedAt = GeneratedColumn<DateTime>(
+    'ended_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _durationSecondsMeta = const VerificationMeta(
+    'durationSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
+    'duration_seconds',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _sumIndoorCMeta = const VerificationMeta(
+    'sumIndoorC',
+  );
+  @override
+  late final GeneratedColumn<double> sumIndoorC = GeneratedColumn<double>(
+    'sum_indoor_c',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _minIndoorCMeta = const VerificationMeta(
+    'minIndoorC',
+  );
+  @override
+  late final GeneratedColumn<double> minIndoorC = GeneratedColumn<double>(
+    'min_indoor_c',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _maxIndoorCMeta = const VerificationMeta(
+    'maxIndoorC',
+  );
+  @override
+  late final GeneratedColumn<double> maxIndoorC = GeneratedColumn<double>(
+    'max_indoor_c',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sampleCountMeta = const VerificationMeta(
+    'sampleCount',
+  );
+  @override
+  late final GeneratedColumn<int> sampleCount = GeneratedColumn<int>(
+    'sample_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    placeId,
+    latitude,
+    longitude,
+    startedAt,
+    lastSeenAt,
+    endedAt,
+    durationSeconds,
+    sumIndoorC,
+    minIndoorC,
+    maxIndoorC,
+    sampleCount,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'place_visits';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PlaceVisitRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('place_id')) {
+      context.handle(
+        _placeIdMeta,
+        placeId.isAcceptableOrUnknown(data['place_id']!, _placeIdMeta),
+      );
+    }
+    if (data.containsKey('latitude')) {
+      context.handle(
+        _latitudeMeta,
+        latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_latitudeMeta);
+    }
+    if (data.containsKey('longitude')) {
+      context.handle(
+        _longitudeMeta,
+        longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_longitudeMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('last_seen_at')) {
+      context.handle(
+        _lastSeenAtMeta,
+        lastSeenAt.isAcceptableOrUnknown(
+          data['last_seen_at']!,
+          _lastSeenAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastSeenAtMeta);
+    }
+    if (data.containsKey('ended_at')) {
+      context.handle(
+        _endedAtMeta,
+        endedAt.isAcceptableOrUnknown(data['ended_at']!, _endedAtMeta),
+      );
+    }
+    if (data.containsKey('duration_seconds')) {
+      context.handle(
+        _durationSecondsMeta,
+        durationSeconds.isAcceptableOrUnknown(
+          data['duration_seconds']!,
+          _durationSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sum_indoor_c')) {
+      context.handle(
+        _sumIndoorCMeta,
+        sumIndoorC.isAcceptableOrUnknown(
+          data['sum_indoor_c']!,
+          _sumIndoorCMeta,
+        ),
+      );
+    }
+    if (data.containsKey('min_indoor_c')) {
+      context.handle(
+        _minIndoorCMeta,
+        minIndoorC.isAcceptableOrUnknown(
+          data['min_indoor_c']!,
+          _minIndoorCMeta,
+        ),
+      );
+    }
+    if (data.containsKey('max_indoor_c')) {
+      context.handle(
+        _maxIndoorCMeta,
+        maxIndoorC.isAcceptableOrUnknown(
+          data['max_indoor_c']!,
+          _maxIndoorCMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sample_count')) {
+      context.handle(
+        _sampleCountMeta,
+        sampleCount.isAcceptableOrUnknown(
+          data['sample_count']!,
+          _sampleCountMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PlaceVisitRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PlaceVisitRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      placeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}place_id'],
+      ),
+      latitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}latitude'],
+      )!,
+      longitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}longitude'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      lastSeenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_seen_at'],
+      )!,
+      endedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ended_at'],
+      ),
+      durationSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_seconds'],
+      )!,
+      sumIndoorC: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sum_indoor_c'],
+      )!,
+      minIndoorC: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}min_indoor_c'],
+      ),
+      maxIndoorC: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}max_indoor_c'],
+      ),
+      sampleCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sample_count'],
+      )!,
+    );
+  }
+
+  @override
+  $PlaceVisitsTable createAlias(String alias) {
+    return $PlaceVisitsTable(attachedDatabase, alias);
+  }
+}
+
+class PlaceVisitRow extends DataClass implements Insertable<PlaceVisitRow> {
+  /// Surrogate primary key.
+  final int id;
+
+  /// The place this session belongs to. Null while the visit is still open
+  /// and has not yet been grouped into a cluster.
+  final int? placeId;
+
+  /// Session latitude (first sample).
+  final double latitude;
+
+  /// Session longitude (first sample).
+  final double longitude;
+
+  /// When the user arrived (first sample of this dwell).
+  final DateTime startedAt;
+
+  /// Most recent sample still inside the grouping radius.
+  final DateTime lastSeenAt;
+
+  /// When the user left. Null while the visit is still open.
+  final DateTime? endedAt;
+
+  /// Closed-visit duration in seconds. Zero while open.
+  final int durationSeconds;
+
+  /// Running sum of valid indoor °C samples.
+  final double sumIndoorC;
+
+  /// Lowest valid indoor °C, or null before the first sample.
+  final double? minIndoorC;
+
+  /// Highest valid indoor °C, or null before the first sample.
+  final double? maxIndoorC;
+
+  /// Number of valid indoor samples folded into [sumIndoorC].
+  final int sampleCount;
+  const PlaceVisitRow({
+    required this.id,
+    this.placeId,
+    required this.latitude,
+    required this.longitude,
+    required this.startedAt,
+    required this.lastSeenAt,
+    this.endedAt,
+    required this.durationSeconds,
+    required this.sumIndoorC,
+    this.minIndoorC,
+    this.maxIndoorC,
+    required this.sampleCount,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || placeId != null) {
+      map['place_id'] = Variable<int>(placeId);
+    }
+    map['latitude'] = Variable<double>(latitude);
+    map['longitude'] = Variable<double>(longitude);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['last_seen_at'] = Variable<DateTime>(lastSeenAt);
+    if (!nullToAbsent || endedAt != null) {
+      map['ended_at'] = Variable<DateTime>(endedAt);
+    }
+    map['duration_seconds'] = Variable<int>(durationSeconds);
+    map['sum_indoor_c'] = Variable<double>(sumIndoorC);
+    if (!nullToAbsent || minIndoorC != null) {
+      map['min_indoor_c'] = Variable<double>(minIndoorC);
+    }
+    if (!nullToAbsent || maxIndoorC != null) {
+      map['max_indoor_c'] = Variable<double>(maxIndoorC);
+    }
+    map['sample_count'] = Variable<int>(sampleCount);
+    return map;
+  }
+
+  PlaceVisitsCompanion toCompanion(bool nullToAbsent) {
+    return PlaceVisitsCompanion(
+      id: Value(id),
+      placeId: placeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(placeId),
+      latitude: Value(latitude),
+      longitude: Value(longitude),
+      startedAt: Value(startedAt),
+      lastSeenAt: Value(lastSeenAt),
+      endedAt: endedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endedAt),
+      durationSeconds: Value(durationSeconds),
+      sumIndoorC: Value(sumIndoorC),
+      minIndoorC: minIndoorC == null && nullToAbsent
+          ? const Value.absent()
+          : Value(minIndoorC),
+      maxIndoorC: maxIndoorC == null && nullToAbsent
+          ? const Value.absent()
+          : Value(maxIndoorC),
+      sampleCount: Value(sampleCount),
+    );
+  }
+
+  factory PlaceVisitRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PlaceVisitRow(
+      id: serializer.fromJson<int>(json['id']),
+      placeId: serializer.fromJson<int?>(json['placeId']),
+      latitude: serializer.fromJson<double>(json['latitude']),
+      longitude: serializer.fromJson<double>(json['longitude']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      lastSeenAt: serializer.fromJson<DateTime>(json['lastSeenAt']),
+      endedAt: serializer.fromJson<DateTime?>(json['endedAt']),
+      durationSeconds: serializer.fromJson<int>(json['durationSeconds']),
+      sumIndoorC: serializer.fromJson<double>(json['sumIndoorC']),
+      minIndoorC: serializer.fromJson<double?>(json['minIndoorC']),
+      maxIndoorC: serializer.fromJson<double?>(json['maxIndoorC']),
+      sampleCount: serializer.fromJson<int>(json['sampleCount']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'placeId': serializer.toJson<int?>(placeId),
+      'latitude': serializer.toJson<double>(latitude),
+      'longitude': serializer.toJson<double>(longitude),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'lastSeenAt': serializer.toJson<DateTime>(lastSeenAt),
+      'endedAt': serializer.toJson<DateTime?>(endedAt),
+      'durationSeconds': serializer.toJson<int>(durationSeconds),
+      'sumIndoorC': serializer.toJson<double>(sumIndoorC),
+      'minIndoorC': serializer.toJson<double?>(minIndoorC),
+      'maxIndoorC': serializer.toJson<double?>(maxIndoorC),
+      'sampleCount': serializer.toJson<int>(sampleCount),
+    };
+  }
+
+  PlaceVisitRow copyWith({
+    int? id,
+    Value<int?> placeId = const Value.absent(),
+    double? latitude,
+    double? longitude,
+    DateTime? startedAt,
+    DateTime? lastSeenAt,
+    Value<DateTime?> endedAt = const Value.absent(),
+    int? durationSeconds,
+    double? sumIndoorC,
+    Value<double?> minIndoorC = const Value.absent(),
+    Value<double?> maxIndoorC = const Value.absent(),
+    int? sampleCount,
+  }) => PlaceVisitRow(
+    id: id ?? this.id,
+    placeId: placeId.present ? placeId.value : this.placeId,
+    latitude: latitude ?? this.latitude,
+    longitude: longitude ?? this.longitude,
+    startedAt: startedAt ?? this.startedAt,
+    lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+    endedAt: endedAt.present ? endedAt.value : this.endedAt,
+    durationSeconds: durationSeconds ?? this.durationSeconds,
+    sumIndoorC: sumIndoorC ?? this.sumIndoorC,
+    minIndoorC: minIndoorC.present ? minIndoorC.value : this.minIndoorC,
+    maxIndoorC: maxIndoorC.present ? maxIndoorC.value : this.maxIndoorC,
+    sampleCount: sampleCount ?? this.sampleCount,
+  );
+  PlaceVisitRow copyWithCompanion(PlaceVisitsCompanion data) {
+    return PlaceVisitRow(
+      id: data.id.present ? data.id.value : this.id,
+      placeId: data.placeId.present ? data.placeId.value : this.placeId,
+      latitude: data.latitude.present ? data.latitude.value : this.latitude,
+      longitude: data.longitude.present ? data.longitude.value : this.longitude,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      lastSeenAt: data.lastSeenAt.present
+          ? data.lastSeenAt.value
+          : this.lastSeenAt,
+      endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
+      durationSeconds: data.durationSeconds.present
+          ? data.durationSeconds.value
+          : this.durationSeconds,
+      sumIndoorC: data.sumIndoorC.present
+          ? data.sumIndoorC.value
+          : this.sumIndoorC,
+      minIndoorC: data.minIndoorC.present
+          ? data.minIndoorC.value
+          : this.minIndoorC,
+      maxIndoorC: data.maxIndoorC.present
+          ? data.maxIndoorC.value
+          : this.maxIndoorC,
+      sampleCount: data.sampleCount.present
+          ? data.sampleCount.value
+          : this.sampleCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlaceVisitRow(')
+          ..write('id: $id, ')
+          ..write('placeId: $placeId, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('sumIndoorC: $sumIndoorC, ')
+          ..write('minIndoorC: $minIndoorC, ')
+          ..write('maxIndoorC: $maxIndoorC, ')
+          ..write('sampleCount: $sampleCount')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    placeId,
+    latitude,
+    longitude,
+    startedAt,
+    lastSeenAt,
+    endedAt,
+    durationSeconds,
+    sumIndoorC,
+    minIndoorC,
+    maxIndoorC,
+    sampleCount,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PlaceVisitRow &&
+          other.id == this.id &&
+          other.placeId == this.placeId &&
+          other.latitude == this.latitude &&
+          other.longitude == this.longitude &&
+          other.startedAt == this.startedAt &&
+          other.lastSeenAt == this.lastSeenAt &&
+          other.endedAt == this.endedAt &&
+          other.durationSeconds == this.durationSeconds &&
+          other.sumIndoorC == this.sumIndoorC &&
+          other.minIndoorC == this.minIndoorC &&
+          other.maxIndoorC == this.maxIndoorC &&
+          other.sampleCount == this.sampleCount);
+}
+
+class PlaceVisitsCompanion extends UpdateCompanion<PlaceVisitRow> {
+  final Value<int> id;
+  final Value<int?> placeId;
+  final Value<double> latitude;
+  final Value<double> longitude;
+  final Value<DateTime> startedAt;
+  final Value<DateTime> lastSeenAt;
+  final Value<DateTime?> endedAt;
+  final Value<int> durationSeconds;
+  final Value<double> sumIndoorC;
+  final Value<double?> minIndoorC;
+  final Value<double?> maxIndoorC;
+  final Value<int> sampleCount;
+  const PlaceVisitsCompanion({
+    this.id = const Value.absent(),
+    this.placeId = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.lastSeenAt = const Value.absent(),
+    this.endedAt = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.sumIndoorC = const Value.absent(),
+    this.minIndoorC = const Value.absent(),
+    this.maxIndoorC = const Value.absent(),
+    this.sampleCount = const Value.absent(),
+  });
+  PlaceVisitsCompanion.insert({
+    this.id = const Value.absent(),
+    this.placeId = const Value.absent(),
+    required double latitude,
+    required double longitude,
+    required DateTime startedAt,
+    required DateTime lastSeenAt,
+    this.endedAt = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.sumIndoorC = const Value.absent(),
+    this.minIndoorC = const Value.absent(),
+    this.maxIndoorC = const Value.absent(),
+    this.sampleCount = const Value.absent(),
+  }) : latitude = Value(latitude),
+       longitude = Value(longitude),
+       startedAt = Value(startedAt),
+       lastSeenAt = Value(lastSeenAt);
+  static Insertable<PlaceVisitRow> custom({
+    Expression<int>? id,
+    Expression<int>? placeId,
+    Expression<double>? latitude,
+    Expression<double>? longitude,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? lastSeenAt,
+    Expression<DateTime>? endedAt,
+    Expression<int>? durationSeconds,
+    Expression<double>? sumIndoorC,
+    Expression<double>? minIndoorC,
+    Expression<double>? maxIndoorC,
+    Expression<int>? sampleCount,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (placeId != null) 'place_id': placeId,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (startedAt != null) 'started_at': startedAt,
+      if (lastSeenAt != null) 'last_seen_at': lastSeenAt,
+      if (endedAt != null) 'ended_at': endedAt,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (sumIndoorC != null) 'sum_indoor_c': sumIndoorC,
+      if (minIndoorC != null) 'min_indoor_c': minIndoorC,
+      if (maxIndoorC != null) 'max_indoor_c': maxIndoorC,
+      if (sampleCount != null) 'sample_count': sampleCount,
+    });
+  }
+
+  PlaceVisitsCompanion copyWith({
+    Value<int>? id,
+    Value<int?>? placeId,
+    Value<double>? latitude,
+    Value<double>? longitude,
+    Value<DateTime>? startedAt,
+    Value<DateTime>? lastSeenAt,
+    Value<DateTime?>? endedAt,
+    Value<int>? durationSeconds,
+    Value<double>? sumIndoorC,
+    Value<double?>? minIndoorC,
+    Value<double?>? maxIndoorC,
+    Value<int>? sampleCount,
+  }) {
+    return PlaceVisitsCompanion(
+      id: id ?? this.id,
+      placeId: placeId ?? this.placeId,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      startedAt: startedAt ?? this.startedAt,
+      lastSeenAt: lastSeenAt ?? this.lastSeenAt,
+      endedAt: endedAt ?? this.endedAt,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      sumIndoorC: sumIndoorC ?? this.sumIndoorC,
+      minIndoorC: minIndoorC ?? this.minIndoorC,
+      maxIndoorC: maxIndoorC ?? this.maxIndoorC,
+      sampleCount: sampleCount ?? this.sampleCount,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (placeId.present) {
+      map['place_id'] = Variable<int>(placeId.value);
+    }
+    if (latitude.present) {
+      map['latitude'] = Variable<double>(latitude.value);
+    }
+    if (longitude.present) {
+      map['longitude'] = Variable<double>(longitude.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (lastSeenAt.present) {
+      map['last_seen_at'] = Variable<DateTime>(lastSeenAt.value);
+    }
+    if (endedAt.present) {
+      map['ended_at'] = Variable<DateTime>(endedAt.value);
+    }
+    if (durationSeconds.present) {
+      map['duration_seconds'] = Variable<int>(durationSeconds.value);
+    }
+    if (sumIndoorC.present) {
+      map['sum_indoor_c'] = Variable<double>(sumIndoorC.value);
+    }
+    if (minIndoorC.present) {
+      map['min_indoor_c'] = Variable<double>(minIndoorC.value);
+    }
+    if (maxIndoorC.present) {
+      map['max_indoor_c'] = Variable<double>(maxIndoorC.value);
+    }
+    if (sampleCount.present) {
+      map['sample_count'] = Variable<int>(sampleCount.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlaceVisitsCompanion(')
+          ..write('id: $id, ')
+          ..write('placeId: $placeId, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('lastSeenAt: $lastSeenAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('sumIndoorC: $sumIndoorC, ')
+          ..write('minIndoorC: $minIndoorC, ')
+          ..write('maxIndoorC: $maxIndoorC, ')
+          ..write('sampleCount: $sampleCount')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $ReadingsTable readings = $ReadingsTable(this);
   late final $DailyAveragesTable dailyAverages = $DailyAveragesTable(this);
   late final $SettingsRowsTable settingsRows = $SettingsRowsTable(this);
+  late final $PlacesTable places = $PlacesTable(this);
+  late final $PlaceVisitsTable placeVisits = $PlaceVisitsTable(this);
   late final Index readingsRecordedAt = Index(
     'readings_recorded_at',
     'CREATE INDEX readings_recorded_at ON readings (recorded_at)',
+  );
+  late final Index placeVisitsPlaceId = Index(
+    'place_visits_place_id',
+    'CREATE INDEX place_visits_place_id ON place_visits (place_id)',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -970,8 +2134,21 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     readings,
     dailyAverages,
     settingsRows,
+    places,
+    placeVisits,
     readingsRecordedAt,
+    placeVisitsPlaceId,
   ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'places',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('place_visits', kind: UpdateKind.delete)],
+    ),
+  ]);
   @override
   DriftDatabaseOptions get options =>
       const DriftDatabaseOptions(storeDateTimeAsText: true);
@@ -1502,6 +2679,773 @@ typedef $$SettingsRowsTableProcessedTableManager =
       SettingRow,
       PrefetchHooks Function()
     >;
+typedef $$PlacesTableCreateCompanionBuilder =
+    PlacesCompanion Function({
+      Value<int> id,
+      required double latitude,
+      required double longitude,
+      required String name,
+      Value<String?> address,
+      required DateTime createdAt,
+    });
+typedef $$PlacesTableUpdateCompanionBuilder =
+    PlacesCompanion Function({
+      Value<int> id,
+      Value<double> latitude,
+      Value<double> longitude,
+      Value<String> name,
+      Value<String?> address,
+      Value<DateTime> createdAt,
+    });
+
+final class $$PlacesTableReferences
+    extends BaseReferences<_$AppDatabase, $PlacesTable, PlaceRow> {
+  $$PlacesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$PlaceVisitsTable, List<PlaceVisitRow>>
+  _placeVisitsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.placeVisits,
+    aliasName: 'places__id__place_visits__place_id',
+  );
+
+  $$PlaceVisitsTableProcessedTableManager get placeVisitsRefs {
+    final manager = $$PlaceVisitsTableTableManager(
+      $_db,
+      $_db.placeVisits,
+    ).filter((f) => f.placeId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_placeVisitsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$PlacesTableFilterComposer
+    extends Composer<_$AppDatabase, $PlacesTable> {
+  $$PlacesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get latitude => $composableBuilder(
+    column: $table.latitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get longitude => $composableBuilder(
+    column: $table.longitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get address => $composableBuilder(
+    column: $table.address,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> placeVisitsRefs(
+    Expression<bool> Function($$PlaceVisitsTableFilterComposer f) f,
+  ) {
+    final $$PlaceVisitsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.placeVisits,
+      getReferencedColumn: (t) => t.placeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlaceVisitsTableFilterComposer(
+            $db: $db,
+            $table: $db.placeVisits,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PlacesTableOrderingComposer
+    extends Composer<_$AppDatabase, $PlacesTable> {
+  $$PlacesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get latitude => $composableBuilder(
+    column: $table.latitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get longitude => $composableBuilder(
+    column: $table.longitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get address => $composableBuilder(
+    column: $table.address,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PlacesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PlacesTable> {
+  $$PlacesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<double> get latitude =>
+      $composableBuilder(column: $table.latitude, builder: (column) => column);
+
+  GeneratedColumn<double> get longitude =>
+      $composableBuilder(column: $table.longitude, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get address =>
+      $composableBuilder(column: $table.address, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> placeVisitsRefs<T extends Object>(
+    Expression<T> Function($$PlaceVisitsTableAnnotationComposer a) f,
+  ) {
+    final $$PlaceVisitsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.placeVisits,
+      getReferencedColumn: (t) => t.placeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlaceVisitsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.placeVisits,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PlacesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PlacesTable,
+          PlaceRow,
+          $$PlacesTableFilterComposer,
+          $$PlacesTableOrderingComposer,
+          $$PlacesTableAnnotationComposer,
+          $$PlacesTableCreateCompanionBuilder,
+          $$PlacesTableUpdateCompanionBuilder,
+          (PlaceRow, $$PlacesTableReferences),
+          PlaceRow,
+          PrefetchHooks Function({bool placeVisitsRefs})
+        > {
+  $$PlacesTableTableManager(_$AppDatabase db, $PlacesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PlacesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PlacesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PlacesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<double> latitude = const Value.absent(),
+                Value<double> longitude = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> address = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => PlacesCompanion(
+                id: id,
+                latitude: latitude,
+                longitude: longitude,
+                name: name,
+                address: address,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required double latitude,
+                required double longitude,
+                required String name,
+                Value<String?> address = const Value.absent(),
+                required DateTime createdAt,
+              }) => PlacesCompanion.insert(
+                id: id,
+                latitude: latitude,
+                longitude: longitude,
+                name: name,
+                address: address,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable(table), $$PlacesTableReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback: ({placeVisitsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (placeVisitsRefs) db.placeVisits],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (placeVisitsRefs)
+                    await $_getPrefetchedData<
+                      PlaceRow,
+                      $PlacesTable,
+                      PlaceVisitRow
+                    >(
+                      currentTable: table,
+                      referencedTable: $$PlacesTableReferences
+                          ._placeVisitsRefsTable(db),
+                      managerFromTypedResult: (p0) => $$PlacesTableReferences(
+                        db,
+                        table,
+                        p0,
+                      ).placeVisitsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.placeId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PlacesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PlacesTable,
+      PlaceRow,
+      $$PlacesTableFilterComposer,
+      $$PlacesTableOrderingComposer,
+      $$PlacesTableAnnotationComposer,
+      $$PlacesTableCreateCompanionBuilder,
+      $$PlacesTableUpdateCompanionBuilder,
+      (PlaceRow, $$PlacesTableReferences),
+      PlaceRow,
+      PrefetchHooks Function({bool placeVisitsRefs})
+    >;
+typedef $$PlaceVisitsTableCreateCompanionBuilder =
+    PlaceVisitsCompanion Function({
+      Value<int> id,
+      Value<int?> placeId,
+      required double latitude,
+      required double longitude,
+      required DateTime startedAt,
+      required DateTime lastSeenAt,
+      Value<DateTime?> endedAt,
+      Value<int> durationSeconds,
+      Value<double> sumIndoorC,
+      Value<double?> minIndoorC,
+      Value<double?> maxIndoorC,
+      Value<int> sampleCount,
+    });
+typedef $$PlaceVisitsTableUpdateCompanionBuilder =
+    PlaceVisitsCompanion Function({
+      Value<int> id,
+      Value<int?> placeId,
+      Value<double> latitude,
+      Value<double> longitude,
+      Value<DateTime> startedAt,
+      Value<DateTime> lastSeenAt,
+      Value<DateTime?> endedAt,
+      Value<int> durationSeconds,
+      Value<double> sumIndoorC,
+      Value<double?> minIndoorC,
+      Value<double?> maxIndoorC,
+      Value<int> sampleCount,
+    });
+
+final class $$PlaceVisitsTableReferences
+    extends BaseReferences<_$AppDatabase, $PlaceVisitsTable, PlaceVisitRow> {
+  $$PlaceVisitsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $PlacesTable _placeIdTable(_$AppDatabase db) =>
+      db.places.createAlias('place_visits__place_id__places__id');
+
+  $$PlacesTableProcessedTableManager? get placeId {
+    final $_column = $_itemColumn<int>('place_id');
+    if ($_column == null) return null;
+    final manager = $$PlacesTableTableManager(
+      $_db,
+      $_db.places,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_placeIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PlaceVisitsTableFilterComposer
+    extends Composer<_$AppDatabase, $PlaceVisitsTable> {
+  $$PlaceVisitsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get latitude => $composableBuilder(
+    column: $table.latitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get longitude => $composableBuilder(
+    column: $table.longitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sumIndoorC => $composableBuilder(
+    column: $table.sumIndoorC,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get minIndoorC => $composableBuilder(
+    column: $table.minIndoorC,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get maxIndoorC => $composableBuilder(
+    column: $table.maxIndoorC,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sampleCount => $composableBuilder(
+    column: $table.sampleCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PlacesTableFilterComposer get placeId {
+    final $$PlacesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.placeId,
+      referencedTable: $db.places,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlacesTableFilterComposer(
+            $db: $db,
+            $table: $db.places,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PlaceVisitsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PlaceVisitsTable> {
+  $$PlaceVisitsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get latitude => $composableBuilder(
+    column: $table.latitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get longitude => $composableBuilder(
+    column: $table.longitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sumIndoorC => $composableBuilder(
+    column: $table.sumIndoorC,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get minIndoorC => $composableBuilder(
+    column: $table.minIndoorC,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get maxIndoorC => $composableBuilder(
+    column: $table.maxIndoorC,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sampleCount => $composableBuilder(
+    column: $table.sampleCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PlacesTableOrderingComposer get placeId {
+    final $$PlacesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.placeId,
+      referencedTable: $db.places,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlacesTableOrderingComposer(
+            $db: $db,
+            $table: $db.places,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PlaceVisitsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PlaceVisitsTable> {
+  $$PlaceVisitsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<double> get latitude =>
+      $composableBuilder(column: $table.latitude, builder: (column) => column);
+
+  GeneratedColumn<double> get longitude =>
+      $composableBuilder(column: $table.longitude, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSeenAt => $composableBuilder(
+    column: $table.lastSeenAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get endedAt =>
+      $composableBuilder(column: $table.endedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get sumIndoorC => $composableBuilder(
+    column: $table.sumIndoorC,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get minIndoorC => $composableBuilder(
+    column: $table.minIndoorC,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get maxIndoorC => $composableBuilder(
+    column: $table.maxIndoorC,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sampleCount => $composableBuilder(
+    column: $table.sampleCount,
+    builder: (column) => column,
+  );
+
+  $$PlacesTableAnnotationComposer get placeId {
+    final $$PlacesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.placeId,
+      referencedTable: $db.places,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlacesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.places,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PlaceVisitsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PlaceVisitsTable,
+          PlaceVisitRow,
+          $$PlaceVisitsTableFilterComposer,
+          $$PlaceVisitsTableOrderingComposer,
+          $$PlaceVisitsTableAnnotationComposer,
+          $$PlaceVisitsTableCreateCompanionBuilder,
+          $$PlaceVisitsTableUpdateCompanionBuilder,
+          (PlaceVisitRow, $$PlaceVisitsTableReferences),
+          PlaceVisitRow,
+          PrefetchHooks Function({bool placeId})
+        > {
+  $$PlaceVisitsTableTableManager(_$AppDatabase db, $PlaceVisitsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PlaceVisitsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PlaceVisitsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PlaceVisitsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> placeId = const Value.absent(),
+                Value<double> latitude = const Value.absent(),
+                Value<double> longitude = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime> lastSeenAt = const Value.absent(),
+                Value<DateTime?> endedAt = const Value.absent(),
+                Value<int> durationSeconds = const Value.absent(),
+                Value<double> sumIndoorC = const Value.absent(),
+                Value<double?> minIndoorC = const Value.absent(),
+                Value<double?> maxIndoorC = const Value.absent(),
+                Value<int> sampleCount = const Value.absent(),
+              }) => PlaceVisitsCompanion(
+                id: id,
+                placeId: placeId,
+                latitude: latitude,
+                longitude: longitude,
+                startedAt: startedAt,
+                lastSeenAt: lastSeenAt,
+                endedAt: endedAt,
+                durationSeconds: durationSeconds,
+                sumIndoorC: sumIndoorC,
+                minIndoorC: minIndoorC,
+                maxIndoorC: maxIndoorC,
+                sampleCount: sampleCount,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> placeId = const Value.absent(),
+                required double latitude,
+                required double longitude,
+                required DateTime startedAt,
+                required DateTime lastSeenAt,
+                Value<DateTime?> endedAt = const Value.absent(),
+                Value<int> durationSeconds = const Value.absent(),
+                Value<double> sumIndoorC = const Value.absent(),
+                Value<double?> minIndoorC = const Value.absent(),
+                Value<double?> maxIndoorC = const Value.absent(),
+                Value<int> sampleCount = const Value.absent(),
+              }) => PlaceVisitsCompanion.insert(
+                id: id,
+                placeId: placeId,
+                latitude: latitude,
+                longitude: longitude,
+                startedAt: startedAt,
+                lastSeenAt: lastSeenAt,
+                endedAt: endedAt,
+                durationSeconds: durationSeconds,
+                sumIndoorC: sumIndoorC,
+                minIndoorC: minIndoorC,
+                maxIndoorC: maxIndoorC,
+                sampleCount: sampleCount,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PlaceVisitsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({placeId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (placeId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.placeId,
+                                referencedTable: $$PlaceVisitsTableReferences
+                                    ._placeIdTable(db),
+                                referencedColumn: $$PlaceVisitsTableReferences
+                                    ._placeIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PlaceVisitsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PlaceVisitsTable,
+      PlaceVisitRow,
+      $$PlaceVisitsTableFilterComposer,
+      $$PlaceVisitsTableOrderingComposer,
+      $$PlaceVisitsTableAnnotationComposer,
+      $$PlaceVisitsTableCreateCompanionBuilder,
+      $$PlaceVisitsTableUpdateCompanionBuilder,
+      (PlaceVisitRow, $$PlaceVisitsTableReferences),
+      PlaceVisitRow,
+      PrefetchHooks Function({bool placeId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1512,4 +3456,8 @@ class $AppDatabaseManager {
       $$DailyAveragesTableTableManager(_db, _db.dailyAverages);
   $$SettingsRowsTableTableManager get settingsRows =>
       $$SettingsRowsTableTableManager(_db, _db.settingsRows);
+  $$PlacesTableTableManager get places =>
+      $$PlacesTableTableManager(_db, _db.places);
+  $$PlaceVisitsTableTableManager get placeVisits =>
+      $$PlaceVisitsTableTableManager(_db, _db.placeVisits);
 }

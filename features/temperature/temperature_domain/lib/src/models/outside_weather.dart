@@ -62,8 +62,78 @@ class OutsideWeather extends Equatable {
   /// the location row rather than showing a placeholder.
   final String? placeName;
 
-  /// Up to four upcoming days of high/low forecast, starting today.
+  /// Up to five upcoming days of high/low forecast, starting today.
   final List<DailyForecast> forecastDays;
+
+  /// Restores [OutsideWeather] from [toJson] output.
+  ///
+  /// Returns `null` when required fields are missing or unreadable so a
+  /// corrupt cache never crashes the app.
+  static OutsideWeather? tryFromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return null;
+    }
+    try {
+      final temperature = json['temperatureCelsius'];
+      final conditionName = json['condition'];
+      if (temperature is! num || conditionName is! String) {
+        return null;
+      }
+      final days = <DailyForecast>[];
+      final rawDays = json['forecastDays'];
+      if (rawDays is List) {
+        for (final item in rawDays) {
+          if (item is Map<String, dynamic>) {
+            days.add(DailyForecast.fromJson(item));
+          } else if (item is Map) {
+            days.add(
+              DailyForecast.fromJson(Map<String, dynamic>.from(item)),
+            );
+          }
+        }
+      }
+      return OutsideWeather(
+        temperatureCelsius: temperature.toDouble(),
+        condition: WeatherCondition.values.firstWhere(
+          (value) => value.name == conditionName,
+          orElse: () => WeatherCondition.clear,
+        ),
+        isDay: json['isDay'] == true,
+        apparentTemperatureCelsius: _asDouble(
+          json['apparentTemperatureCelsius'],
+        ),
+        relativeHumidityPercent: _asDouble(json['relativeHumidityPercent']),
+        windSpeedKph: _asDouble(json['windSpeedKph']),
+        surfacePressureHpa: _asDouble(json['surfacePressureHpa']),
+        uvIndex: _asDouble(json['uvIndex']),
+        sunset: json['sunset'] is String
+            ? DateTime.tryParse(json['sunset'] as String)
+            : null,
+        placeName: json['placeName'] as String?,
+        forecastDays: days,
+      );
+    } on Object {
+      return null;
+    }
+  }
+
+  /// Serializes this snapshot for the on-device weather cache.
+  Map<String, dynamic> toJson() => {
+    'temperatureCelsius': temperatureCelsius,
+    'condition': condition.name,
+    'isDay': isDay,
+    'apparentTemperatureCelsius': apparentTemperatureCelsius,
+    'relativeHumidityPercent': relativeHumidityPercent,
+    'windSpeedKph': windSpeedKph,
+    'surfacePressureHpa': surfacePressureHpa,
+    'uvIndex': uvIndex,
+    'sunset': sunset?.toIso8601String(),
+    'placeName': placeName,
+    'forecastDays': [for (final day in forecastDays) day.toJson()],
+  };
+
+  static double? _asDouble(Object? value) =>
+      value is num ? value.toDouble() : null;
 
   @override
   List<Object?> get props => [

@@ -240,4 +240,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get close => 'Close';
+
+  @override
+  String get refreshInterval => 'Refresh interval';
+
+  @override
+  String get selectRefreshInterval => 'Select refresh interval';
+
+  @override
+  String get nextUpdate => 'Next update';
+
+  @override
+  String get refreshIntervalOneMinute => '1 minute';
+
+  @override
+  String refreshIntervalMinutes(int count) {
+    return '$count minutes';
+  }
+
+  @override
+  String get refreshIntervalOneHour => '1 hour';
+
+  @override
+  String refreshIntervalHours(int count) {
+    return '$count hours';
+  }
 }

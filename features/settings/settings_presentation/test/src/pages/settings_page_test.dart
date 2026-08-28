@@ -47,6 +47,7 @@ void main() {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
         home: BlocProvider<SettingsCubit>.value(
           value: cubit,
           child: SettingsPage(indoorCalibration: indoorCalibration),
@@ -142,6 +143,37 @@ void main() {
 
       verify(
         () => settingsRepository.updateSettings(settings: settings),
+      ).called(1);
+    });
+
+    testWidgets('shows the default 15-minute refresh interval', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      expect(find.text('REFRESH INTERVAL'), findsOneWidget);
+      expect(find.text('15 minutes'), findsOneWidget);
+    });
+
+    testWidgets('picking 1 minute persists immediately', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('refresh-interval-tile')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Select refresh interval'), findsOneWidget);
+      expect(find.text('1 minute'), findsOneWidget);
+      expect(find.text('5 minutes'), findsOneWidget);
+
+      await tester.tap(find.text('1 minute'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => settingsRepository.updateSettings(
+          settings: settings.copyWith(
+            refreshInterval: const Duration(minutes: 1),
+          ),
+        ),
       ).called(1);
     });
   });

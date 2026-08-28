@@ -240,4 +240,29 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get close => 'إغلاق';
+
+  @override
+  String get refreshInterval => 'فترة التحديث';
+
+  @override
+  String get selectRefreshInterval => 'اختر فترة التحديث';
+
+  @override
+  String get nextUpdate => 'التحديث التالي';
+
+  @override
+  String get refreshIntervalOneMinute => 'دقيقة واحدة';
+
+  @override
+  String refreshIntervalMinutes(int count) {
+    return '$count دقائق';
+  }
+
+  @override
+  String get refreshIntervalOneHour => 'ساعة واحدة';
+
+  @override
+  String refreshIntervalHours(int count) {
+    return '$count ساعات';
+  }
 }

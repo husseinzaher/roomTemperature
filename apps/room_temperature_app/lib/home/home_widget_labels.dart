@@ -1,5 +1,6 @@
 import 'package:home_widget_bridge/home_widget_bridge.dart';
 import 'package:intl/intl.dart';
+import 'package:room_temperature_app/places/place_models.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:temperature_domain/temperature_domain.dart';
 import 'package:temperature_presentation/temperature_presentation.dart';
@@ -37,7 +38,12 @@ String homeWidgetDateLabel(DateTime value) {
   return DateFormat('EEEE, MMMM d', 'en').format(value);
 }
 
-/// Up to four forecast columns for the home widget strip.
+/// Compact clock-subheader date, e.g. `Fri, August 28`.
+String homeWidgetShortDateLabel(DateTime value) {
+  return DateFormat('EEE, MMMM d', 'en').format(value);
+}
+
+/// Up to five forecast columns for the home widget strip.
 List<HomeWidgetForecastDay> homeWidgetForecast({
   required OutsideWeather? weather,
   required Units units,
@@ -45,7 +51,7 @@ List<HomeWidgetForecastDay> homeWidgetForecast({
 }) {
   final days = weather?.forecastDays ?? const <DailyForecast>[];
   return [
-    for (var i = 0; i < 4; i++)
+    for (var i = 0; i < 5; i++)
       if (i < days.length)
         HomeWidgetForecastDay(
           label: homeWidgetForecastDayLabel(days[i].date, now),
@@ -55,13 +61,16 @@ List<HomeWidgetForecastDay> homeWidgetForecast({
               '${units.symbol}/'
               '${units.fromCelsius(days[i].minCelsius).round()}'
               '${units.symbol}',
+          high:
+              '${units.fromCelsius(days[i].maxCelsius).round()}'
+              '${units.symbol}',
         )
       else
         HomeWidgetForecastDay.empty,
   ];
 }
 
-/// `Today`, `Tomorrow`, or `MM/dd` relative to [now].
+/// `Today` for the current calendar day, otherwise a weekday like `MON`.
 String homeWidgetForecastDayLabel(DateTime date, DateTime now) {
   final day = DateTime(date.year, date.month, date.day);
   final today = DateTime(now.year, now.month, now.day);
@@ -72,9 +81,7 @@ String homeWidgetForecastDayLabel(DateTime date, DateTime now) {
   if (diff == 1) {
     return 'Tomorrow';
   }
-  final month = date.month.toString().padLeft(2, '0');
-  final dateDay = date.day.toString().padLeft(2, '0');
-  return '$month/$dateDay';
+  return DateFormat('EEE', 'en').format(date).toUpperCase();
 }
 
 /// Feels-like / humidity / wind / UV tiles, using dashboard formatters.
@@ -91,5 +98,84 @@ homeWidgetStatLabels({
     humidity: WeatherFormat.humidity(weather?.relativeHumidityPercent),
     wind: WeatherFormat.windSpeed(weather?.windSpeedKph),
     uv: WeatherFormat.uvIndex(weather?.uvIndex),
+  );
+}
+
+/// Formatted place rows for the dedicated places widget.
+List<HomeWidgetPlaceRow> homeWidgetPlaces({
+  required List<PlaceSummary> places,
+  required Units units,
+  required DateTime now,
+}) {
+  return [
+    for (final place in places.take(5))
+      HomeWidgetPlaceRow(
+        name: place.name,
+        temperature: place.averageIndoorCelsius == null
+            ? '—'
+            : units.fromCelsius(place.averageIndoorCelsius!).toStringAsFixed(1),
+        subtitle: place.lastVisitAt == null
+            ? ''
+            : homeWidgetForecastDayLabel(place.lastVisitAt!, now),
+      ),
+  ];
+}
+
+/// Pushes [reading] (and optional [weather] / places) to every Android widget.
+Future<void> syncHomeWidget({
+  required HomeWidgetBridge bridge,
+  required Reading reading,
+  required UserSettings settings,
+  OutsideWeather? weather,
+  PlaceSummary? recentPlace,
+  List<PlaceSummary> places = const [],
+  DateTime? clockAt,
+}) {
+  final units = settings.units;
+  final threshold = settings.threshold;
+  final breached =
+      threshold.enabled &&
+      (reading.roomTemperatureCelsius < threshold.minCelsius ||
+          reading.roomTemperatureCelsius > threshold.maxCelsius);
+  final stats = homeWidgetStatLabels(weather: weather, units: units);
+  final placeAverage = recentPlace?.averageIndoorCelsius;
+
+  return bridge.updateReading(
+    HomeWidgetSnapshot.fromCelsius(
+      roomTemperatureCelsius: reading.roomTemperatureCelsius,
+      outsideTemperatureCelsius: reading.outsideTemperatureCelsius,
+      convertFromCelsius: units.fromCelsius,
+      unitSymbol: units.symbol,
+      sourceLabel: homeWidgetSourceLabel(reading.roomTemperatureSource),
+      thresholdBreached: breached,
+      updatedAt: reading.timestamp,
+      clockAt: clockAt ?? DateTime.now(),
+      locationLabel: weather?.placeName,
+      dateLabel: homeWidgetDateLabel(reading.timestamp),
+      shortDateLabel: homeWidgetShortDateLabel(reading.timestamp),
+      conditionLabel: weather == null
+          ? null
+          : homeWidgetConditionLabel(weather.condition),
+      conditionIcon: weather?.condition.name,
+      feelsLikeLabel: stats.feelsLike,
+      humidityLabel: stats.humidity,
+      windLabel: stats.wind,
+      uvLabel: stats.uv,
+      placeName: recentPlace?.name,
+      placeAverageLabel: placeAverage == null
+          ? null
+          : '${units.fromCelsius(placeAverage).toStringAsFixed(1)}'
+                '${units.symbol}',
+      forecast: homeWidgetForecast(
+        weather: weather,
+        units: units,
+        now: reading.timestamp,
+      ),
+      places: homeWidgetPlaces(
+        places: places,
+        units: units,
+        now: reading.timestamp,
+      ),
+    ),
   );
 }

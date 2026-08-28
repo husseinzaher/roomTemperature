@@ -31,6 +31,7 @@ class DashboardPage extends StatelessWidget {
     required this.onUnitsChanged,
     super.key,
     this.onOpenSettings,
+    this.refreshInterval = RefreshInterval.defaultInterval,
   });
 
   /// The unit temperatures are displayed in.
@@ -42,12 +43,16 @@ class DashboardPage extends StatelessWidget {
   /// Called when the settings action in the top bar is tapped.
   final VoidCallback? onOpenSettings;
 
+  /// Global user-facing refresh interval, used to show the next update time.
+  final Duration refreshInterval;
+
   @override
   Widget build(BuildContext context) {
     return _DashboardView(
       units: units,
       onUnitsChanged: onUnitsChanged,
       onOpenSettings: onOpenSettings,
+      refreshInterval: refreshInterval,
     );
   }
 }
@@ -57,11 +62,13 @@ class _DashboardView extends StatefulWidget {
     required this.units,
     required this.onUnitsChanged,
     required this.onOpenSettings,
+    required this.refreshInterval,
   });
 
   final Units units;
   final ValueChanged<Units> onUnitsChanged;
   final VoidCallback? onOpenSettings;
+  final Duration refreshInterval;
 
   @override
   State<_DashboardView> createState() => _DashboardViewState();
@@ -108,6 +115,7 @@ class _DashboardViewState extends State<_DashboardView> {
             units: widget.units,
             onUnitsChanged: widget.onUnitsChanged,
             onOpenSettings: widget.onOpenSettings,
+            refreshInterval: widget.refreshInterval,
             l10n: l10n,
           ),
         ),
@@ -124,6 +132,7 @@ class _Content extends StatelessWidget {
     required this.units,
     required this.onUnitsChanged,
     required this.onOpenSettings,
+    required this.refreshInterval,
     required this.l10n,
   });
 
@@ -133,6 +142,7 @@ class _Content extends StatelessWidget {
   final Units units;
   final ValueChanged<Units> onUnitsChanged;
   final VoidCallback? onOpenSettings;
+  final Duration refreshInterval;
   final AppLocalizations l10n;
 
   @override
@@ -241,6 +251,12 @@ class _Content extends StatelessWidget {
               _UpdatedAtLabel(
                 timestamp: reading!.timestamp,
                 prefix: l10n.lastUpdated,
+              ),
+              _UpdatedAtLabel(
+                timestamp: reading!.timestamp.add(
+                  RefreshInterval.clamp(refreshInterval),
+                ),
+                prefix: l10n.nextUpdate,
               ),
               if (state.status == TemperatureStatus.error ||
                   state.status == TemperatureStatus.sourceUnavailable)

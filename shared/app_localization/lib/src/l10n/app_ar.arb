@@ -298,5 +298,43 @@
   "close": "إغلاق",
   "@close": {
     "description": "Label for a button that dismisses a dialog"
+  },
+  "refreshInterval": "فترة التحديث",
+  "@refreshInterval": {
+    "description": "Settings label for the global data-refresh interval"
+  },
+  "selectRefreshInterval": "اختر فترة التحديث",
+  "@selectRefreshInterval": {
+    "description": "Title of the refresh-interval picker dialog"
+  },
+  "nextUpdate": "التحديث التالي",
+  "@nextUpdate": {
+    "description": "Label for the next expected data-refresh time"
+  },
+  "refreshIntervalOneMinute": "دقيقة واحدة",
+  "@refreshIntervalOneMinute": {
+    "description": "Refresh interval of one minute"
+  },
+  "refreshIntervalMinutes": "{count} دقائق",
+  "@refreshIntervalMinutes": {
+    "description": "Refresh interval in minutes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "refreshIntervalOneHour": "ساعة واحدة",
+  "@refreshIntervalOneHour": {
+    "description": "Refresh interval of one hour"
+  },
+  "refreshIntervalHours": "{count} ساعات",
+  "@refreshIntervalHours": {
+    "description": "Refresh interval in hours",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

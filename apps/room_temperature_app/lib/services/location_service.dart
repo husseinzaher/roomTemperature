@@ -31,14 +31,41 @@ class LocationService {
         longitude: position.longitude,
       );
     } on Exception {
-      final lastKnown = await Geolocator.getLastKnownPosition();
+      final lastKnown = await lastKnownOrNull();
       if (lastKnown != null) {
-        return Location(
-          latitude: lastKnown.latitude,
-          longitude: lastKnown.longitude,
-        );
+        return lastKnown;
       }
       rethrow;
+    }
+  }
+
+  /// Current permission without prompting. Used by place history so a
+  /// denied permission never blocks indoor temperature or widgets.
+  Future<LocationPermission> checkPermission() => Geolocator.checkPermission();
+
+  /// Whether GPS/network location is enabled on the device.
+  Future<bool> isServiceEnabled() => Geolocator.isLocationServiceEnabled();
+
+  /// Last known fix, or `null` when permission is missing or no fix exists.
+  ///
+  /// Does not request permission and does not start a GPS loop.
+  Future<Location?> lastKnownOrNull() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+      final lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown == null) {
+        return null;
+      }
+      return Location(
+        latitude: lastKnown.latitude,
+        longitude: lastKnown.longitude,
+      );
+    } on Exception {
+      return null;
     }
   }
 

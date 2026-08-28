@@ -66,7 +66,7 @@ class OpenMeteoClient {
       '&current=$_currentFields'
       '&daily=$_dailyFields'
       '&timezone=auto'
-      '&forecast_days=4',
+      '&forecast_days=5',
     );
 
     final http.Response response;
@@ -133,7 +133,10 @@ class OpenMeteoClient {
       surfacePressureHpa: parsed.surfacePressureHpa,
       uvIndex: parsed.uvIndex,
       sunset: parsed.sunset,
-      placeName: await _lookupPlaceName(latitude, longitude),
+      placeName: await lookupPlaceName(
+        latitude: latitude,
+        longitude: longitude,
+      ),
       forecastDays: parsed.forecastDays,
     );
   }
@@ -142,8 +145,12 @@ class OpenMeteoClient {
   ///
   /// Open-Meteo has no reverse-geocoding API, so this uses Nominatim.
   /// A missing or unreadable place name must never fail the weather fetch:
-  /// the dashboard simply omits the location row.
-  Future<String?> _lookupPlaceName(double latitude, double longitude) async {
+  /// the dashboard simply omits the location row. Results should be cached
+  /// by the caller; this does not upload visit history.
+  Future<String?> lookupPlaceName({
+    required double latitude,
+    required double longitude,
+  }) async {
     try {
       final uri = Uri.parse(
         '$_reverseGeocodeUrl?lat=$latitude&lon=$longitude'
@@ -213,7 +220,7 @@ class OpenMeteoClient {
     return null;
   }
 
-  /// Parses up to four [DailyForecast] days from an Open-Meteo `daily` map.
+  /// Parses up to five [DailyForecast] days from an Open-Meteo `daily` map.
   static List<DailyForecast> _parseDailyForecast(Map<String, dynamic>? daily) {
     if (daily == null) {
       return const [];
@@ -235,8 +242,8 @@ class OpenMeteoClient {
     if (codes.length < count) {
       count = codes.length;
     }
-    if (count > 4) {
-      count = 4;
+    if (count > 5) {
+      count = 5;
     }
     final days = <DailyForecast>[];
     for (var i = 0; i < count; i++) {

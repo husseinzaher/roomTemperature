@@ -13,6 +13,19 @@ class DailyForecast extends Equatable {
     required this.minCelsius,
   });
 
+  /// Restores a [DailyForecast] from [toJson] output.
+  factory DailyForecast.fromJson(Map<String, dynamic> json) {
+    return DailyForecast(
+      date: DateTime.parse(json['date'] as String),
+      condition: WeatherCondition.values.firstWhere(
+        (value) => value.name == json['condition'],
+        orElse: () => WeatherCondition.clear,
+      ),
+      maxCelsius: (json['maxCelsius'] as num).toDouble(),
+      minCelsius: (json['minCelsius'] as num).toDouble(),
+    );
+  }
+
   /// Calendar date for this forecast day.
   final DateTime date;
 
@@ -24,6 +37,14 @@ class DailyForecast extends Equatable {
 
   /// Daily low in Celsius.
   final double minCelsius;
+
+  /// Serializes this forecast day for local cache.
+  Map<String, dynamic> toJson() => {
+    'date': date.toIso8601String(),
+    'condition': condition.name,
+    'maxCelsius': maxCelsius,
+    'minCelsius': minCelsius,
+  };
 
   @override
   List<Object?> get props => [date, condition, maxCelsius, minCelsius];

@@ -535,6 +535,48 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'إغلاق'**
   String get close;
+
+  /// Settings label for the global data-refresh interval
+  ///
+  /// In ar, this message translates to:
+  /// **'فترة التحديث'**
+  String get refreshInterval;
+
+  /// Title of the refresh-interval picker dialog
+  ///
+  /// In ar, this message translates to:
+  /// **'اختر فترة التحديث'**
+  String get selectRefreshInterval;
+
+  /// Label for the next expected data-refresh time
+  ///
+  /// In ar, this message translates to:
+  /// **'التحديث التالي'**
+  String get nextUpdate;
+
+  /// Refresh interval of one minute
+  ///
+  /// In ar, this message translates to:
+  /// **'دقيقة واحدة'**
+  String get refreshIntervalOneMinute;
+
+  /// Refresh interval in minutes
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} دقائق'**
+  String refreshIntervalMinutes(int count);
+
+  /// Refresh interval of one hour
+  ///
+  /// In ar, this message translates to:
+  /// **'ساعة واحدة'**
+  String get refreshIntervalOneHour;
+
+  /// Refresh interval in hours
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} ساعات'**
+  String refreshIntervalHours(int count);
 }
 
 class _AppLocalizationsDelegate
