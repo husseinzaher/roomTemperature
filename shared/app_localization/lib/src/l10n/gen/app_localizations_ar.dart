@@ -265,4 +265,61 @@ class AppLocalizationsAr extends AppLocalizations {
   String refreshIntervalHours(int count) {
     return '$count ساعات';
   }
+
+  @override
+  String get placeHistory => 'سجل المواقع';
+
+  @override
+  String get enablePlaceHistory => 'تفعيل سجل الأماكن';
+
+  @override
+  String get placeHistoryHint =>
+      'تجميع الإقامات القريبة في زيارات. تُحفظ على هذا الجهاز فقط.';
+
+  @override
+  String get viewPlaces => 'عرض الأماكن';
+
+  @override
+  String get deletePlaceHistory => 'حذف كل سجل الأماكن';
+
+  @override
+  String get deletePlaceHistoryConfirm =>
+      'سيُحذف كل مكان وزيارة محفوظة على هذا الجهاز. لا يمكن التراجع.';
+
+  @override
+  String get places => 'الأماكن';
+
+  @override
+  String get noPlacesYet =>
+      'لا أماكن بعد. ابقَ في موقع لمدة ٣٠ دقيقة على الأقل مع تفعيل الموقع.';
+
+  @override
+  String get noForecastYet =>
+      'لا توقعات محفوظة بعد. اتصل بالإنترنت لجلب الطقس الخارجي.';
+
+  @override
+  String placeVisitCount(int count) {
+    return '$count زيارات';
+  }
+
+  @override
+  String get placeAverage => 'المتوسط';
+
+  @override
+  String get placeMin => 'الأدنى';
+
+  @override
+  String get placeMax => 'الأعلى';
+
+  @override
+  String get placeVisits => 'الزيارات';
+
+  @override
+  String get placeTotalTime => 'الوقت الإجمالي';
+
+  @override
+  String get placeLastVisit => 'آخر زيارة';
+
+  @override
+  String get deletePlace => 'حذف هذا المكان';
 }

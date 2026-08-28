@@ -21,16 +21,24 @@ void main() {
       );
     });
 
-    test('uses MM/dd after tomorrow', () {
+    test('uses weekday abbreviations after tomorrow', () {
       expect(
         homeWidgetForecastDayLabel(DateTime(2026, 8, 28), now),
-        '08/28',
+        'FRI',
       );
     });
   });
 
+  group('homeWidgetDateLabel', () {
+    test('formats long and short dates without locale init', () {
+      final friday = DateTime(2026, 8, 28);
+      expect(homeWidgetDateLabel(friday), 'Friday, August 28');
+      expect(homeWidgetShortDateLabel(friday), 'Fri, August 28');
+    });
+  });
+
   group('homeWidgetForecast', () {
-    test('formats four high/low columns', () {
+    test('formats five high/low columns', () {
       final weather = OutsideWeather(
         temperatureCelsius: 36,
         condition: WeatherCondition.fog,
@@ -57,7 +65,7 @@ void main() {
         now: DateTime(2026, 8, 26),
       );
 
-      expect(days, hasLength(4));
+      expect(days, hasLength(5));
       expect(days[0].label, 'Today');
       expect(days[0].range, '40°C/21°C');
       expect(days[0].iconKey, 'fog');

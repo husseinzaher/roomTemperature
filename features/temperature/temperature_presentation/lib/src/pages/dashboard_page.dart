@@ -31,6 +31,7 @@ class DashboardPage extends StatelessWidget {
     required this.onUnitsChanged,
     super.key,
     this.onOpenSettings,
+    this.onOpenForecast,
     this.refreshInterval = RefreshInterval.defaultInterval,
   });
 
@@ -43,6 +44,9 @@ class DashboardPage extends StatelessWidget {
   /// Called when the settings action in the top bar is tapped.
   final VoidCallback? onOpenSettings;
 
+  /// Called when the 5-day forecast row is tapped.
+  final VoidCallback? onOpenForecast;
+
   /// Global user-facing refresh interval, used to show the next update time.
   final Duration refreshInterval;
 
@@ -52,6 +56,7 @@ class DashboardPage extends StatelessWidget {
       units: units,
       onUnitsChanged: onUnitsChanged,
       onOpenSettings: onOpenSettings,
+      onOpenForecast: onOpenForecast,
       refreshInterval: refreshInterval,
     );
   }
@@ -62,12 +67,14 @@ class _DashboardView extends StatefulWidget {
     required this.units,
     required this.onUnitsChanged,
     required this.onOpenSettings,
+    required this.onOpenForecast,
     required this.refreshInterval,
   });
 
   final Units units;
   final ValueChanged<Units> onUnitsChanged;
   final VoidCallback? onOpenSettings;
+  final VoidCallback? onOpenForecast;
   final Duration refreshInterval;
 
   @override
@@ -115,6 +122,7 @@ class _DashboardViewState extends State<_DashboardView> {
             units: widget.units,
             onUnitsChanged: widget.onUnitsChanged,
             onOpenSettings: widget.onOpenSettings,
+            onOpenForecast: widget.onOpenForecast,
             refreshInterval: widget.refreshInterval,
             l10n: l10n,
           ),
@@ -132,6 +140,7 @@ class _Content extends StatelessWidget {
     required this.units,
     required this.onUnitsChanged,
     required this.onOpenSettings,
+    required this.onOpenForecast,
     required this.refreshInterval,
     required this.l10n,
   });
@@ -142,6 +151,7 @@ class _Content extends StatelessWidget {
   final Units units;
   final ValueChanged<Units> onUnitsChanged;
   final VoidCallback? onOpenSettings;
+  final VoidCallback? onOpenForecast;
   final Duration refreshInterval;
   final AppLocalizations l10n;
 
@@ -268,6 +278,7 @@ class _Content extends StatelessWidget {
                 forecastLabel: l10n.fiveDayForecast,
                 airQualityLabel: l10n.airQualityMeter,
                 radarLabel: l10n.weatherRadar,
+                onOpenForecast: onOpenForecast,
               ),
             ],
           ],

@@ -11,17 +11,19 @@ import 'package:room_temperature_app/places/visit_rules.dart';
 class PlaceHistoryRepository {
   /// {@macro place_history_repository}
   PlaceHistoryRepository({
-    required AppDatabase database,
-    VisitDetector detector = const VisitDetector(),
-    Future<String?> Function(double latitude, double longitude)? lookupName,
-  }) : _database = database,
-       _detector = detector,
-       _lookupName = lookupName;
+    required this.database,
+    this.detector = const VisitDetector(),
+    this.lookupName,
+  });
 
-  final AppDatabase _database;
-  final VisitDetector _detector;
-  final Future<String?> Function(double latitude, double longitude)?
-  _lookupName;
+  /// On-device store.
+  final AppDatabase database;
+
+  /// Pure visit-grouping logic.
+  final VisitDetector detector;
+
+  /// Optional reverse-geocode for a new place name. Cached on the place.
+  final Future<String?> Function(double latitude, double longitude)? lookupName;
 
   /// Fallback label when reverse geocoding is unavailable.
   static const String unnamedPlace = 'Unnamed place';
@@ -39,7 +41,7 @@ class PlaceHistoryRepository {
     }
 
     final current = await _loadOpenVisit();
-    final tick = _detector.observe(
+    final tick = detector.observe(
       current: current,
       fix: LocationFix(
         latitude: latitude,
@@ -57,15 +59,15 @@ class PlaceHistoryRepository {
     if (current == null) {
       return;
     }
-    await _applyTick(_detector.close(current: current), previous: current);
+    await _applyTick(detector.close(current: current), previous: current);
   }
 
   /// Places with aggregated closed-visit stats, most recently visited first.
   Future<List<PlaceSummary>> listPlaces() async {
-    final places = await _database.readPlaces();
+    final places = await database.readPlaces();
     final summaries = <PlaceSummary>[];
     for (final place in places) {
-      final visits = await _database.readClosedVisits(place.id);
+      final visits = await database.readClosedVisits(place.id);
       if (visits.isEmpty) {
         continue;
       }
@@ -81,17 +83,17 @@ class PlaceHistoryRepository {
 
   /// Closed visits for [placeId], newest first.
   Future<List<PlaceVisitSummary>> listVisits(int placeId) async {
-    final rows = await _database.readClosedVisits(placeId);
+    final rows = await database.readClosedVisits(placeId);
     return [for (final row in rows) _visitSummary(row)];
   }
 
   /// Aggregated stats for [placeId], or `null` if missing.
   Future<PlaceSummary?> readPlace(int placeId) async {
-    final place = await _database.readPlace(placeId);
+    final place = await database.readPlace(placeId);
     if (place == null) {
       return null;
     }
-    final visits = await _database.readClosedVisits(placeId);
+    final visits = await database.readClosedVisits(placeId);
     if (visits.isEmpty) {
       return null;
     }
@@ -99,13 +101,13 @@ class PlaceHistoryRepository {
   }
 
   /// Deletes one place and its visits.
-  Future<void> deletePlace(int placeId) => _database.deletePlace(placeId);
+  Future<void> deletePlace(int placeId) => database.deletePlace(placeId);
 
   /// Deletes all places and visits. Does not touch readings or settings.
-  Future<void> deleteAll() => _database.deleteAllPlaceHistory();
+  Future<void> deleteAll() => database.deleteAllPlaceHistory();
 
   Future<OpenVisit?> _loadOpenVisit() async {
-    final row = await _database.readOpenVisit();
+    final row = await database.readOpenVisit();
     if (row == null) {
       return null;
     }
@@ -132,7 +134,7 @@ class PlaceHistoryRepository {
     if (tick.completed != null) {
       await _persistCompleted(tick.completed!, visitId: previous?.id);
     } else if (tick.discardedShortStay && previous?.id != null) {
-      await _database.deleteVisit(previous!.id!);
+      await database.deleteVisit(previous!.id!);
     }
 
     final open = tick.open;
@@ -140,7 +142,7 @@ class PlaceHistoryRepository {
       return;
     }
     if (open.id != null) {
-      await _database.updateOpenVisit(
+      await database.updateOpenVisit(
         visitId: open.id!,
         lastSeenAt: open.lastSeenAt,
         sumIndoorC: open.stats.sum,
@@ -154,7 +156,7 @@ class PlaceHistoryRepository {
         previous.id != null &&
         !tick.discardedShortStay &&
         tick.completed == null) {
-      await _database.updateOpenVisit(
+      await database.updateOpenVisit(
         visitId: previous.id!,
         lastSeenAt: open.lastSeenAt,
         sumIndoorC: open.stats.sum,
@@ -164,7 +166,7 @@ class PlaceHistoryRepository {
       );
       return;
     }
-    await _database.insertOpenVisit(
+    await database.insertOpenVisit(
       latitude: open.latitude,
       longitude: open.longitude,
       startedAt: open.startedAt,
@@ -172,9 +174,9 @@ class PlaceHistoryRepository {
       indoorCelsius: open.stats.count == 1 ? open.stats.average : null,
     );
     if (open.stats.count > 1) {
-      final stored = await _database.readOpenVisit();
+      final stored = await database.readOpenVisit();
       if (stored != null) {
-        await _database.updateOpenVisit(
+        await database.updateOpenVisit(
           visitId: stored.id,
           lastSeenAt: open.lastSeenAt,
           sumIndoorC: open.stats.sum,
@@ -193,7 +195,7 @@ class PlaceHistoryRepository {
     final placeId = await _findOrCreatePlace(draft);
     final durationSeconds = draft.duration.inSeconds;
     if (visitId != null) {
-      await _database.closeVisit(
+      await database.closeVisit(
         visitId: visitId,
         placeId: placeId,
         endedAt: draft.endedAt,
@@ -205,14 +207,14 @@ class PlaceHistoryRepository {
       );
       return;
     }
-    final id = await _database.insertOpenVisit(
+    final id = await database.insertOpenVisit(
       latitude: draft.latitude,
       longitude: draft.longitude,
       startedAt: draft.startedAt,
       lastSeenAt: draft.endedAt,
       indoorCelsius: null,
     );
-    await _database.closeVisit(
+    await database.closeVisit(
       visitId: id,
       placeId: placeId,
       endedAt: draft.endedAt,
@@ -228,7 +230,7 @@ class PlaceHistoryRepository {
     if (draft.placeId != null) {
       return draft.placeId!;
     }
-    final existing = await _database.readPlaces();
+    final existing = await database.readPlaces();
     for (final place in existing) {
       final meters = VisitDetector.distanceMeters(
         place.latitude,
@@ -242,7 +244,7 @@ class PlaceHistoryRepository {
     }
     var name = unnamedPlace;
     String? address;
-    final lookup = _lookupName;
+    final lookup = lookupName;
     if (lookup != null) {
       try {
         final resolved = await lookup(draft.latitude, draft.longitude);
@@ -253,7 +255,7 @@ class PlaceHistoryRepository {
         // Offline geocoding must not block storing the visit.
       }
     }
-    return _database.insertPlace(
+    return database.insertPlace(
       latitude: draft.latitude,
       longitude: draft.longitude,
       name: name,

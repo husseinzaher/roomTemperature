@@ -48,6 +48,7 @@ void main() {
       Stream<Reading?>? watchStream,
       Future<double?> Function()? readAmbientSensor,
       Future<IndoorTemperatureReading?> Function()? resolveIndoorTemperature,
+      Future<OutsideWeather?> Function()? loadCachedWeather,
       double indoorOffset = 2,
     }) {
       when(
@@ -67,6 +68,7 @@ void main() {
         getIndoorOffset: () => indoorOffset,
         readAmbientSensor: readAmbientSensor,
         resolveIndoorTemperature: resolveIndoorTemperature,
+        loadCachedWeather: loadCachedWeather,
       );
     }
 
@@ -233,6 +235,44 @@ void main() {
             ),
       ],
     );
+
+    blocTest<TemperatureCubit, TemperatureState>(
+      'refresh() uses cached outdoor weather when the network fails',
+      build: () => buildCubit(
+        resolveIndoorTemperature: () async => const IndoorTemperatureReading(
+          celsius: 24.5,
+          source: IndoorTemperatureSource.estimated,
+          confidence: 0.8,
+        ),
+        loadCachedWeather: () async => weatherAt(33),
+      ),
+      setUp: () {
+        when(
+          () => weatherRepository.fetchOutsideWeather(location: location),
+        ).thenThrow(Exception('network down'));
+      },
+      act: (cubit) => cubit.refresh(),
+      expect: () => [
+        isA<TemperatureState>().having(
+          (s) => s.status,
+          'status',
+          TemperatureStatus.loading,
+        ),
+        isA<TemperatureState>()
+            .having((s) => s.status, 'status', TemperatureStatus.loaded)
+            .having(
+              (s) => s.weather?.temperatureCelsius,
+              'cached weather',
+              33,
+            )
+            .having(
+              (s) => s.reading?.roomTemperatureCelsius,
+              'roomTemperatureCelsius',
+              24.5,
+            ),
+      ],
+    );
+
     blocTest<TemperatureCubit, TemperatureState>(
       'refresh() emits an error state when the weather fetch fails',
       build: buildCubit,

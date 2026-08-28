@@ -4,6 +4,8 @@ import 'package:local_database/local_database.dart';
 import 'package:notifications_data/notifications_data.dart';
 import 'package:notifications_domain/notifications_domain.dart';
 import 'package:room_temperature_app/home/home_widget_labels.dart';
+import 'package:room_temperature_app/places/place_history_repository.dart';
+import 'package:room_temperature_app/places/place_visit_tracker.dart';
 import 'package:room_temperature_app/services/background_data_refresh.dart';
 import 'package:room_temperature_app/services/indoor_temperature_bindings.dart';
 import 'package:room_temperature_app/services/location_service.dart';
@@ -11,6 +13,7 @@ import 'package:settings_data/settings_data.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:temperature_data/temperature_data.dart';
+import 'package:temperature_domain/temperature_domain.dart';
 import 'package:workmanager/workmanager.dart';
 
 /// Legacy WorkManager unique name (threshold-only). Cancelled on register.
@@ -78,9 +81,18 @@ Future<void> _runBackgroundRefresh(AppDatabase database) async {
     database: database,
   );
   final settingsRepository = DriftSettingsRepository(database: database);
-  final weatherRepository = OpenMeteoWeatherRepository(OpenMeteoClient());
+  final openMeteo = OpenMeteoClient();
+  final weatherRepository = OpenMeteoWeatherRepository(openMeteo);
   const locationService = LocationService();
   const homeWidget = HomeWidgetBridge();
+  final weatherCache = WeatherCacheStore(database);
+  final placeRepository = PlaceHistoryRepository(
+    database: database,
+    lookupName: (latitude, longitude) => openMeteo.lookupPlaceName(
+      latitude: latitude,
+      longitude: longitude,
+    ),
+  );
   final indoorService = buildIndoorTemperatureService(
     database: database,
     settingsRepository: settingsRepository,
@@ -112,8 +124,16 @@ Future<void> _runBackgroundRefresh(AppDatabase database) async {
       );
     },
     fetchWeather: () async {
-      final location = await locationService.getCurrentLocation();
-      return weatherRepository.fetchOutsideWeather(location: location);
+      try {
+        final location = await locationService.getCurrentLocation();
+        final weather = await weatherRepository.fetchOutsideWeather(
+          location: location,
+        );
+        await weatherCache.save(weather);
+        return weather;
+      } on Exception {
+        return weatherCache.load();
+      }
     },
     readLatest: () => temperatureRepository.watchLatestReading().first,
     persist: (reading) =>
@@ -123,11 +143,27 @@ Future<void> _runBackgroundRefresh(AppDatabase database) async {
       await homeWidget.saveRefreshIntervalMinutes(
         RefreshInterval.clamp(settings.refreshInterval).inMinutes,
       );
+      final tracker = PlaceVisitTracker(
+        repository: placeRepository,
+        locationService: locationService,
+      );
+      await tracker.observe(
+        settings: settings,
+        indoorCelsius:
+            reading.roomTemperatureSource ==
+                RoomTemperatureSource.batteryTemperature
+            ? indoorService.lastEstimate?.temperatureCelsius
+            : reading.roomTemperatureCelsius,
+        at: reading.timestamp,
+      );
+      final places = await tracker.repository.listPlaces();
       await syncHomeWidget(
         bridge: homeWidget,
         reading: reading,
         settings: settings,
         weather: weather,
+        recentPlace: places.isEmpty ? null : places.first,
+        places: places,
       );
     },
     checkThresholds: monitor.check,

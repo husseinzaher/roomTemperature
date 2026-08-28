@@ -1,9 +1,33 @@
 import 'package:home_widget_bridge/home_widget_bridge.dart';
-import 'package:intl/intl.dart';
 import 'package:room_temperature_app/places/place_models.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:temperature_domain/temperature_domain.dart';
 import 'package:temperature_presentation/temperature_presentation.dart';
+
+const _weekdaysShort = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const _weekdaysLong = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+const _months = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 /// Indoor-source label shown on the Android home and lock-screen widgets.
 ///
@@ -35,12 +59,15 @@ String homeWidgetConditionLabel(WeatherCondition condition) {
 
 /// Header date, e.g. `Wednesday, August 26`.
 String homeWidgetDateLabel(DateTime value) {
-  return DateFormat('EEEE, MMMM d', 'en').format(value);
+  return '${_weekdaysLong[value.weekday - 1]}, '
+      '${_months[value.month - 1]} ${value.day}';
 }
 
 /// Compact clock-subheader date, e.g. `Fri, August 28`.
 String homeWidgetShortDateLabel(DateTime value) {
-  return DateFormat('EEE, MMMM d', 'en').format(value);
+  final short = _weekdaysShort[value.weekday - 1];
+  final titled = '${short[0]}${short.substring(1).toLowerCase()}';
+  return '$titled, ${_months[value.month - 1]} ${value.day}';
 }
 
 /// Up to five forecast columns for the home widget strip.
@@ -81,7 +108,7 @@ String homeWidgetForecastDayLabel(DateTime date, DateTime now) {
   if (diff == 1) {
     return 'Tomorrow';
   }
-  return DateFormat('EEE', 'en').format(date).toUpperCase();
+  return _weekdaysShort[date.weekday - 1];
 }
 
 /// Feels-like / humidity / wind / UV tiles, using dashboard formatters.

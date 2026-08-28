@@ -17,6 +17,7 @@ void main() {
       );
       expect(defaults.manualIndoorTemperatureCelsius, isNull);
       expect(defaults.refreshInterval, const Duration(minutes: 15));
+      expect(defaults.placeHistoryEnabled, isTrue);
     });
 
     test('supports value equality', () {

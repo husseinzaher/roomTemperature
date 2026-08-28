@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
 /// {@template places_table}
-/// A locally stored geographic place that groups nearby [PlaceVisits].
+/// A locally stored geographic place that groups nearby visit sessions.
 ///
 /// Coordinates never leave the device. Reverse-geocoded names are cached
 /// here so later visits stay usable offline.

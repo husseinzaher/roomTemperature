@@ -43,14 +43,20 @@ void main() {
       await cubit.close();
     });
 
-    Widget buildSubject({IndoorCalibrationHost? indoorCalibration}) {
+    Widget buildSubject({
+      IndoorCalibrationHost? indoorCalibration,
+      PlaceHistoryHost? placeHistory,
+    }) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('en'),
         home: BlocProvider<SettingsCubit>.value(
           value: cubit,
-          child: SettingsPage(indoorCalibration: indoorCalibration),
+          child: SettingsPage(
+            indoorCalibration: indoorCalibration,
+            placeHistory: placeHistory,
+          ),
         ),
       );
     }
@@ -144,6 +150,46 @@ void main() {
       verify(
         () => settingsRepository.updateSettings(settings: settings),
       ).called(1);
+    });
+
+    testWidgets('renders place history controls when a host is provided', (
+      tester,
+    ) async {
+      var enabledCalls = 0;
+      var deleteCalls = 0;
+      var openCalls = 0;
+
+      await tester.pumpWidget(
+        buildSubject(
+          placeHistory: PlaceHistoryHost(
+            onOpenPlaces: () => openCalls++,
+            onDeleteAll: () async => deleteCalls++,
+            onEnabledChanged: ({required enabled}) async => enabledCalls++,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('LOCATION HISTORY'), findsOneWidget);
+      expect(find.byKey(const Key('place-history-switch')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('place-history-switch')));
+      await tester.pump();
+      expect(enabledCalls, 1);
+
+      await tester.tap(find.text('View places'));
+      await tester.pump();
+      expect(openCalls, 1);
+
+      await tester.tap(find.text('Delete all place history'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('every stored place and visit'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Delete all place history').last);
+      await tester.pumpAndSettle();
+      expect(deleteCalls, 1);
     });
 
     testWidgets('shows the default 15-minute refresh interval', (tester) async {

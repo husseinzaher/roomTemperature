@@ -34,9 +34,10 @@ void main() {
             'indoorTemperatureSource': 'batteryTemperature',
             'manualIndoorTempC': '22.5',
             'refreshIntervalMinutes': '15',
+            'placeHistoryEnabled': 'true',
           },
         );
-        expect(map.keys, hasLength(8));
+        expect(map.keys, hasLength(9));
       });
 
       test('encodes celsius units as "celsius"', () {
@@ -159,6 +160,16 @@ void main() {
         expect(
           converter.fromMap(converter.toMap(settings)).refreshInterval,
           const Duration(hours: 24),
+        );
+      });
+
+      test('round-trips place history enabled false', () {
+        final settings = UserSettings.defaults().copyWith(
+          placeHistoryEnabled: false,
+        );
+        expect(
+          converter.fromMap(converter.toMap(settings)).placeHistoryEnabled,
+          isFalse,
         );
       });
     });

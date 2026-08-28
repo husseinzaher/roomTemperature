@@ -8,6 +8,7 @@ import 'package:local_database/local_database.dart';
 import 'package:notifications_data/notifications_data.dart';
 import 'package:notifications_domain/notifications_domain.dart';
 import 'package:provider/provider.dart';
+import 'package:room_temperature_app/places/place_history_repository.dart';
 import 'package:room_temperature_app/routing/router.dart';
 import 'package:room_temperature_app/services/indoor_temperature_bindings.dart';
 import 'package:room_temperature_app/services/indoor_temperature_service.dart';
@@ -41,7 +42,8 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final weatherRepository = OpenMeteoWeatherRepository(OpenMeteoClient());
+    final openMeteo = OpenMeteoClient();
+    final weatherRepository = OpenMeteoWeatherRepository(openMeteo);
     final temperatureRepository = DriftTemperatureRepository(
       database: database,
     );
@@ -50,6 +52,14 @@ class App extends StatelessWidget {
     final indoorTemperatureService = buildIndoorTemperatureService(
       database: database,
       settingsRepository: settingsRepository,
+    );
+    final weatherCache = WeatherCacheStore(database);
+    final placeHistoryRepository = PlaceHistoryRepository(
+      database: database,
+      lookupName: (latitude, longitude) => openMeteo.lookupPlaceName(
+        latitude: latitude,
+        longitude: longitude,
+      ),
     );
 
     return MultiProvider(
@@ -66,6 +76,8 @@ class App extends StatelessWidget {
         Provider<IndoorTemperatureService>.value(
           value: indoorTemperatureService,
         ),
+        Provider<WeatherCacheStore>.value(value: weatherCache),
+        Provider<PlaceHistoryRepository>.value(value: placeHistoryRepository),
       ],
       child: const _AppView(),
     );

@@ -23,6 +23,8 @@ class TemperatureModule extends StatelessWidget {
     required this.child,
     this.readAmbientSensor,
     this.resolveIndoorTemperature,
+    this.loadCachedWeather,
+    this.persistWeather,
     super.key,
   });
 
@@ -50,6 +52,12 @@ class TemperatureModule extends StatelessWidget {
   /// selection. Independent of weather.
   final Future<IndoorTemperatureReading?> Function()? resolveIndoorTemperature;
 
+  /// Loads cached outdoor weather when the network is unavailable.
+  final Future<OutsideWeather?> Function()? loadCachedWeather;
+
+  /// Persists a successful outdoor fetch, including the 5-day forecast.
+  final Future<void> Function(OutsideWeather weather)? persistWeather;
+
   /// The subtree that can access the provided [TemperatureCubit].
   final Widget child;
 
@@ -64,6 +72,8 @@ class TemperatureModule extends StatelessWidget {
         getIndoorOffset: getIndoorOffset,
         readAmbientSensor: readAmbientSensor,
         resolveIndoorTemperature: resolveIndoorTemperature,
+        loadCachedWeather: loadCachedWeather,
+        persistWeather: persistWeather,
       ),
       child: child,
     );

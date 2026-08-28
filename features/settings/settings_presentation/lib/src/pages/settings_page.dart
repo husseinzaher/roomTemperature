@@ -8,6 +8,7 @@ import 'package:settings_presentation/src/cubit/settings_cubit.dart';
 import 'package:settings_presentation/src/cubit/settings_state.dart';
 import 'package:settings_presentation/src/format/refresh_interval_label.dart';
 import 'package:settings_presentation/src/pages/indoor_calibration.dart';
+import 'package:settings_presentation/src/pages/place_history_host.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 /// {@template settings_page}
@@ -24,6 +25,7 @@ class SettingsPage extends StatelessWidget {
     super.key,
     this.loadIndoorTemperatureSourceAvailability,
     this.indoorCalibration,
+    this.placeHistory,
   });
 
   /// Loads source availability for the source-selection controls.
@@ -32,6 +34,9 @@ class SettingsPage extends StatelessWidget {
 
   /// Optional local indoor-temperature calibration, injected by the app.
   final IndoorCalibrationHost? indoorCalibration;
+
+  /// Optional local place-history controls, injected by the app.
+  final PlaceHistoryHost? placeHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +111,7 @@ class SettingsPage extends StatelessWidget {
       loadIndoorTemperatureSourceAvailability:
           loadIndoorTemperatureSourceAvailability,
       indoorCalibration: indoorCalibration,
+      placeHistory: placeHistory,
       onSave: (updated) => context.read<SettingsCubit>().save(updated),
     );
   }
@@ -118,6 +124,7 @@ class _SettingsForm extends StatefulWidget {
     required this.onSave,
     this.loadIndoorTemperatureSourceAvailability,
     this.indoorCalibration,
+    this.placeHistory,
     this.errorMessage,
   });
 
@@ -127,6 +134,7 @@ class _SettingsForm extends StatefulWidget {
   final Future<Map<IndoorTemperaturePreference, bool>> Function()?
   loadIndoorTemperatureSourceAvailability;
   final IndoorCalibrationHost? indoorCalibration;
+  final PlaceHistoryHost? placeHistory;
   final ValueChanged<UserSettings> onSave;
 
   @override
@@ -145,6 +153,7 @@ class _SettingsFormState extends State<_SettingsForm> {
   late IndoorTemperaturePreference _indoorTemperaturePreference;
   late double? _manualIndoorTemperatureCelsius;
   late Duration _refreshInterval;
+  late bool _placeHistoryEnabled;
 
   @override
   void initState() {
@@ -158,6 +167,7 @@ class _SettingsFormState extends State<_SettingsForm> {
     _manualIndoorTemperatureCelsius =
         widget.initial.manualIndoorTemperatureCelsius;
     _refreshInterval = RefreshInterval.clamp(widget.initial.refreshInterval);
+    _placeHistoryEnabled = widget.initial.placeHistoryEnabled;
   }
 
   String _formatCelsius(double celsius) {
@@ -178,6 +188,7 @@ class _SettingsFormState extends State<_SettingsForm> {
         indoorTemperaturePreference: _indoorTemperaturePreference,
         manualIndoorTemperatureCelsius: _manualIndoorTemperatureCelsius,
         refreshInterval: _refreshInterval,
+        placeHistoryEnabled: _placeHistoryEnabled,
       ),
     );
   }
@@ -248,6 +259,62 @@ class _SettingsFormState extends State<_SettingsForm> {
     );
   }
 
+  Future<void> _confirmDeletePlaceHistory(BuildContext context) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: GlassCard(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.deletePlaceHistory,
+                  style: const TextStyle(
+                    color: GlassTokens.onGlass,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.deletePlaceHistoryConfirm,
+                  style: const TextStyle(
+                    color: GlassTokens.onGlassMuted,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: Text(l10n.cancel),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        child: Text(l10n.deletePlaceHistory),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (confirmed == true && context.mounted) {
+      await widget.placeHistory?.onDeleteAll();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -309,6 +376,56 @@ class _SettingsFormState extends State<_SettingsForm> {
               ),
             ),
             const SizedBox(height: 14),
+            if (widget.placeHistory != null) ...[
+              GlassCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SectionLabel(l10n.placeHistory),
+                    SwitchListTile(
+                      key: const Key('place-history-switch'),
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        l10n.enablePlaceHistory,
+                        style: const TextStyle(color: GlassTokens.onGlass),
+                      ),
+                      subtitle: Text(
+                        l10n.placeHistoryHint,
+                        style: const TextStyle(
+                          color: GlassTokens.onGlassMuted,
+                          fontSize: 13,
+                        ),
+                      ),
+                      value: _placeHistoryEnabled,
+                      onChanged: (value) {
+                        setState(() => _placeHistoryEnabled = value);
+                        unawaited(
+                          widget.placeHistory!.onEnabledChanged(
+                            enabled: value,
+                          ),
+                        );
+                      },
+                    ),
+                    GlassSelectTile(
+                      title: l10n.viewPlaces,
+                      icon: Icons.place_outlined,
+                      selected: false,
+                      onTap: widget.placeHistory!.onOpenPlaces,
+                    ),
+                    const SizedBox(height: 8),
+                    GlassSelectTile(
+                      title: l10n.deletePlaceHistory,
+                      icon: Icons.delete_outline,
+                      selected: false,
+                      onTap: () => unawaited(
+                        _confirmDeletePlaceHistory(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
             GlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -198,7 +198,8 @@ class AppDatabase extends _$AppDatabase {
 
   /// The place row for [id], or `null`.
   Future<PlaceRow?> readPlace(int id) {
-    return (select(places)..where((row) => row.id.equals(id))).getSingleOrNull();
+    return (select(places)..where((row) => row.id.equals(id)))
+        .getSingleOrNull();
   }
 
   /// Inserts a new place cluster and returns its id.
@@ -237,7 +238,7 @@ class AppDatabase extends _$AppDatabase {
   /// All locally stored places.
   Future<List<PlaceRow>> readPlaces() => select(places).get();
 
-  /// Inserts an open visit (null [endedAt], null [placeId] until closed).
+  /// Inserts an open visit. endedAt and placeId stay null until closed.
   Future<int> insertOpenVisit({
     required double latitude,
     required double longitude,
@@ -252,7 +253,7 @@ class AppDatabase extends _$AppDatabase {
         longitude: longitude,
         startedAt: startedAt,
         lastSeenAt: lastSeenAt,
-        sumIndoorC: Value(hasSample ? indoorCelsius : 0),
+        sumIndoorC: Value(indoorCelsius ?? 0),
         minIndoorC: Value(indoorCelsius),
         maxIndoorC: Value(indoorCelsius),
         sampleCount: Value(hasSample ? 1 : 0),

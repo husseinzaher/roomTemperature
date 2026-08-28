@@ -19,18 +19,22 @@ class RoomTempWidgetProvider : HomeWidgetProvider() {
         widgetData: SharedPreferences,
     ) {
         appWidgetIds.forEach { widgetId ->
-            val layoutId = RoomTempWidgetViews.layoutForMain(
-                appWidgetManager = appWidgetManager,
-                widgetId = widgetId,
-            )
-            val views: RemoteViews = RoomTempWidgetViews.build(
-                context = context,
-                layoutId = layoutId,
-                widgetData = widgetData,
-                widgetId = widgetId,
-                size = RoomTempWidgetViews.sizeFor(appWidgetManager, widgetId),
-            )
-            appWidgetManager.updateAppWidget(widgetId, views)
+            try {
+                val layoutId = RoomTempWidgetViews.layoutForMain(
+                    appWidgetManager = appWidgetManager,
+                    widgetId = widgetId,
+                )
+                val views: RemoteViews = RoomTempWidgetViews.build(
+                    context = context,
+                    layoutId = layoutId,
+                    widgetData = widgetData,
+                    widgetId = widgetId,
+                    size = RoomTempWidgetViews.sizeFor(appWidgetManager, widgetId),
+                )
+                appWidgetManager.updateAppWidget(widgetId, views)
+            } catch (error: Exception) {
+                android.util.Log.e("RoomTempWidget", "Failed to bind widget $widgetId", error)
+            }
         }
     }
 

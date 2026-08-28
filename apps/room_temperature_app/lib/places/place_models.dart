@@ -1,7 +1,5 @@
-import 'package:equatable/equatable.dart';
-
 /// Aggregated stats for one locally stored place (many visits).
-class PlaceSummary extends Equatable {
+class PlaceSummary {
   /// Creates a place summary.
   const PlaceSummary({
     required this.id,
@@ -49,25 +47,10 @@ class PlaceSummary extends Equatable {
 
   /// End of the most recent closed visit.
   final DateTime? lastVisitAt;
-
-  @override
-  List<Object?> get props => [
-    id,
-    latitude,
-    longitude,
-    name,
-    address,
-    visitCount,
-    totalDuration,
-    averageIndoorCelsius,
-    minIndoorCelsius,
-    maxIndoorCelsius,
-    lastVisitAt,
-  ];
 }
 
 /// One closed visit shown on the place-details screen.
-class PlaceVisitSummary extends Equatable {
+class PlaceVisitSummary {
   /// Creates a visit summary.
   const PlaceVisitSummary({
     required this.id,
@@ -103,16 +86,4 @@ class PlaceVisitSummary extends Equatable {
 
   /// Highest indoor °C.
   final double? maxIndoorCelsius;
-
-  @override
-  List<Object?> get props => [
-    id,
-    startedAt,
-    endedAt,
-    duration,
-    sampleCount,
-    averageIndoorCelsius,
-    minIndoorCelsius,
-    maxIndoorCelsius,
-  ];
 }

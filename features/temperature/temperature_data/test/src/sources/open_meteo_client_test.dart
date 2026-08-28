@@ -118,7 +118,7 @@ void main() {
         'weather_code',
       );
       expect(uri.queryParameters['timezone'], 'auto');
-      expect(uri.queryParameters['forecast_days'], '4');
+      expect(uri.queryParameters['forecast_days'], '5');
     });
 
     test(
@@ -354,7 +354,7 @@ void main() {
       expect(result.isDay, isFalse);
     });
 
-    test('parses a four-day high/low forecast from daily arrays', () async {
+    test('parses a five-day high/low forecast from daily arrays', () async {
       stubResponse(
         jsonEncode({
           'current': {
@@ -368,10 +368,11 @@ void main() {
               '2026-08-27',
               '2026-08-28',
               '2026-08-29',
+              '2026-08-30',
             ],
-            'temperature_2m_max': [40, 39, 39, 37],
-            'temperature_2m_min': [21, 21, 22, 20],
-            'weather_code': [45, 0, 0, 3],
+            'temperature_2m_max': [40, 39, 39, 37, 36],
+            'temperature_2m_min': [21, 21, 22, 20, 20],
+            'weather_code': [45, 0, 0, 3, 61],
             'sunset': ['2026-08-26T19:26'],
             'uv_index_max': [8],
           },
@@ -383,12 +384,13 @@ void main() {
         longitude: 2,
       );
 
-      expect(result.forecastDays, hasLength(4));
+      expect(result.forecastDays, hasLength(5));
       expect(result.forecastDays.first.maxCelsius, 40);
       expect(result.forecastDays.first.minCelsius, 21);
       expect(result.forecastDays.first.condition, WeatherCondition.fog);
       expect(result.forecastDays[1].condition, WeatherCondition.clear);
-      expect(result.forecastDays.last.maxCelsius, 37);
+      expect(result.forecastDays.last.maxCelsius, 36);
+      expect(result.forecastDays.last.condition, WeatherCondition.rain);
     });
 
     group('maps weather_code to a WeatherCondition', () {

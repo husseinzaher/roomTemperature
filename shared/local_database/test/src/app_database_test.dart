@@ -9,8 +9,8 @@ void main() {
     setUp(() => database = AppDatabase(NativeDatabase.memory()));
     tearDown(() => database.close());
 
-    test('schemaVersion is 1', () {
-      expect(database.schemaVersion, 1);
+    test('schemaVersion is 2', () {
+      expect(database.schemaVersion, 2);
     });
 
     test('normalizeDay strips the time component to midnight UTC', () {

@@ -265,4 +265,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String refreshIntervalHours(int count) {
     return '$count hours';
   }
+
+  @override
+  String get placeHistory => 'Location history';
+
+  @override
+  String get enablePlaceHistory => 'Enable place history';
+
+  @override
+  String get placeHistoryHint =>
+      'Group nearby stays into visits. Stored only on this device.';
+
+  @override
+  String get viewPlaces => 'View places';
+
+  @override
+  String get deletePlaceHistory => 'Delete all place history';
+
+  @override
+  String get deletePlaceHistoryConfirm =>
+      'This removes every stored place and visit from this device. It cannot be undone.';
+
+  @override
+  String get places => 'Places';
+
+  @override
+  String get noPlacesYet =>
+      'No places yet. Stay somewhere for at least 30 minutes with location enabled.';
+
+  @override
+  String get noForecastYet =>
+      'No forecast cached yet. Connect to the internet to fetch outdoor weather.';
+
+  @override
+  String placeVisitCount(int count) {
+    return '$count visits';
+  }
+
+  @override
+  String get placeAverage => 'Average';
+
+  @override
+  String get placeMin => 'Min';
+
+  @override
+  String get placeMax => 'Max';
+
+  @override
+  String get placeVisits => 'Visits';
+
+  @override
+  String get placeTotalTime => 'Total time';
+
+  @override
+  String get placeLastVisit => 'Last visit';
+
+  @override
+  String get deletePlace => 'Delete this place';
 }

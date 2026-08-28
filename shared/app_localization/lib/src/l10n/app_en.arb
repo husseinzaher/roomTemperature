@@ -93,5 +93,29 @@
         "type": "int"
       }
     }
-  }
+  },
+  "placeHistory": "Location history",
+  "enablePlaceHistory": "Enable place history",
+  "placeHistoryHint": "Group nearby stays into visits. Stored only on this device.",
+  "viewPlaces": "View places",
+  "deletePlaceHistory": "Delete all place history",
+  "deletePlaceHistoryConfirm": "This removes every stored place and visit from this device. It cannot be undone.",
+  "places": "Places",
+  "noPlacesYet": "No places yet. Stay somewhere for at least 30 minutes with location enabled.",
+  "noForecastYet": "No forecast cached yet. Connect to the internet to fetch outdoor weather.",
+  "placeVisitCount": "{count} visits",
+  "@placeVisitCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "placeAverage": "Average",
+  "placeMin": "Min",
+  "placeMax": "Max",
+  "placeVisits": "Visits",
+  "placeTotalTime": "Total time",
+  "placeLastVisit": "Last visit",
+  "deletePlace": "Delete this place"
 }

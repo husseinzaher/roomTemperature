@@ -9,12 +9,17 @@ import 'package:history_presentation/history_presentation.dart';
 import 'package:home_widget_bridge/home_widget_bridge.dart';
 import 'package:provider/provider.dart';
 import 'package:room_temperature_app/home/home_widget_labels.dart';
+import 'package:room_temperature_app/places/place_history_repository.dart';
+import 'package:room_temperature_app/places/place_models.dart';
+import 'package:room_temperature_app/places/place_visit_tracker.dart';
+import 'package:room_temperature_app/places/places_page.dart';
 import 'package:room_temperature_app/services/data_refresh_coordinator.dart';
 import 'package:room_temperature_app/services/indoor_temperature_service.dart';
 import 'package:room_temperature_app/services/location_service.dart';
 import 'package:room_temperature_app/services/notifications_background.dart';
 import 'package:settings_domain/settings_domain.dart';
 import 'package:settings_presentation/settings_presentation.dart';
+import 'package:temperature_data/temperature_data.dart';
 import 'package:temperature_domain/temperature_domain.dart';
 import 'package:temperature_presentation/temperature_presentation.dart';
 import 'package:ui_kit/ui_kit.dart';
@@ -56,6 +61,10 @@ class _TemperatureAndHistoryScope extends StatelessWidget {
           preference: settings.indoorTemperaturePreference,
         );
       },
+      loadCachedWeather: () => context.read<WeatherCacheStore>().load(),
+      persistWeather: (weather) {
+        return context.read<WeatherCacheStore>().save(weather);
+      },
       child: HistoryModule(
         historyRepository: context.read<IHistoryRepository>(),
         child: const _HomeTabsView(),
@@ -76,6 +85,7 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
 
   int _index = _dashboardIndex;
   late final DataRefreshCoordinator _coordinator;
+  late final PlaceVisitTracker _placeTracker;
 
   @override
   void initState() {
@@ -84,6 +94,10 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
     final temperatureCubit = context.read<TemperatureCubit>();
     final indoorService = context.read<IndoorTemperatureService>();
     final homeWidget = context.read<HomeWidgetBridge>();
+    _placeTracker = PlaceVisitTracker(
+      repository: context.read<PlaceHistoryRepository>(),
+      locationService: context.read<LocationService>(),
+    );
 
     _coordinator = DataRefreshCoordinator(
       readInterval: () => RefreshInterval.clamp(
@@ -99,8 +113,16 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
       sampleIndoor: () async {
         final settings =
             settingsCubit.state.settings ?? UserSettings.defaults();
-        await indoorService.resolve(
+        final indoor = await indoorService.resolve(
           preference: settings.indoorTemperaturePreference,
+        );
+        final indoorCelsius =
+            indoor?.source == IndoorTemperatureSource.batteryTemperature
+            ? indoorService.lastEstimate?.temperatureCelsius
+            : indoor?.celsius;
+        await _placeTracker.observe(
+          settings: settings,
+          indoorCelsius: indoorCelsius,
         );
       },
       rescheduleBackground: registerBackgroundDataRefresh,
@@ -167,6 +189,9 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
                     refreshInterval: refreshInterval,
                     onUnitsChanged: _onUnitsChanged,
                     onOpenSettings: () => setState(() => _index = 2),
+                    onOpenForecast: () => _openGlassPage(
+                      ForecastPage(units: units),
+                    ),
                   ),
                   const _TabScaffold(child: HistoryPage()),
                   _TabScaffold(
@@ -233,6 +258,25 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
                               .resetCalibration();
                         },
                       ),
+                      placeHistory: PlaceHistoryHost(
+                        onOpenPlaces: () => unawaited(_openPlaces(context)),
+                        onDeleteAll: () async {
+                          await context
+                              .read<PlaceHistoryRepository>()
+                              .deleteAll();
+                        },
+                        onEnabledChanged: ({required enabled}) async {
+                          final cubit = context.read<SettingsCubit>();
+                          final current =
+                              cubit.state.settings ?? UserSettings.defaults();
+                          await cubit.save(
+                            current.copyWith(placeHistoryEnabled: enabled),
+                          );
+                          if (!enabled) {
+                            await _placeTracker.stopTracking();
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ],
@@ -286,17 +330,79 @@ class _HomeTabsViewState extends State<_HomeTabsView> {
     final settings =
         context.read<SettingsCubit>().state.settings ?? UserSettings.defaults();
 
-    unawaited(
-      syncHomeWidget(
-        bridge: context.read<HomeWidgetBridge>(),
-        reading: reading,
-        settings: settings,
-        weather: state.weather,
-      ),
-    );
+    unawaited(_pushWidgetAndVisit(context, reading, state.weather, settings));
     _coordinator.recordSuccessfulUpdate(
       at: reading.timestamp,
       outdoor: state.weather != null,
+    );
+  }
+
+  Future<void> _pushWidgetAndVisit(
+    BuildContext context,
+    Reading reading,
+    OutsideWeather? weather,
+    UserSettings settings,
+  ) async {
+    final indoorService = context.read<IndoorTemperatureService>();
+    final placeRepository = context.read<PlaceHistoryRepository>();
+    final widgetBridge = context.read<HomeWidgetBridge>();
+    try {
+      await _placeTracker.observe(
+        settings: settings,
+        indoorCelsius:
+            reading.roomTemperatureSource ==
+                RoomTemperatureSource.batteryTemperature
+            ? indoorService.lastEstimate?.temperatureCelsius
+            : reading.roomTemperatureCelsius,
+        at: reading.timestamp,
+      );
+    } on Exception {
+      // Visit sampling must not block widget updates.
+    }
+    var places = <PlaceSummary>[];
+    try {
+      places = await placeRepository.listPlaces();
+    } on Exception {
+      places = <PlaceSummary>[];
+    }
+    await syncHomeWidget(
+      bridge: widgetBridge,
+      reading: reading,
+      settings: settings,
+      weather: weather,
+      recentPlace: places.isEmpty ? null : places.first,
+      places: places,
+    );
+  }
+
+  void _openGlassPage(Widget page) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => WeatherBackdrop(
+          mood: BackdropMood.overcast,
+          child: page,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPlaces(BuildContext context) async {
+    final settings =
+        context.read<SettingsCubit>().state.settings ?? UserSettings.defaults();
+    final repo = context.read<PlaceHistoryRepository>();
+    final places = await repo.listPlaces();
+    if (!context.mounted) {
+      return;
+    }
+    _openGlassPage(
+      PlacesPage(
+        places: places,
+        units: settings.units,
+        loadVisits: repo.listVisits,
+        onDeletePlace: (id) async {
+          await repo.deletePlace(id);
+        },
+      ),
     );
   }
 }

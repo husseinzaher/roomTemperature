@@ -21,8 +21,8 @@ class TemperatureCubit extends Cubit<TemperatureState> {
     required this._getIndoorOffset,
     this._readAmbientSensor,
     this._resolveIndoorTemperature,
-    this._loadCachedWeather,
-    this._persistWeather,
+    this.loadCachedWeather,
+    this.persistWeather,
   }) : _temperatureRepository = temperatureRepository,
        super(const TemperatureState.loading()) {
     _subscription = temperatureRepository.watchLatestReading().listen(
@@ -39,13 +39,17 @@ class TemperatureCubit extends Cubit<TemperatureState> {
   final double Function() _getIndoorOffset;
   final Future<double?> Function()? _readAmbientSensor;
   final Future<IndoorTemperatureReading?> Function()? _resolveIndoorTemperature;
-  final Future<OutsideWeather?> Function()? _loadCachedWeather;
-  final Future<void> Function(OutsideWeather weather)? _persistWeather;
+
+  /// Loads the last successful outdoor snapshot, including the 5-day forecast.
+  final Future<OutsideWeather?> Function()? loadCachedWeather;
+
+  /// Persists a successful outdoor snapshot for offline widgets.
+  final Future<void> Function(OutsideWeather weather)? persistWeather;
 
   StreamSubscription<Reading?>? _subscription;
 
   Future<void> _seedCachedWeather() async {
-    final loader = _loadCachedWeather;
+    final loader = loadCachedWeather;
     if (loader == null) {
       return;
     }
@@ -57,8 +61,6 @@ class TemperatureCubit extends Cubit<TemperatureState> {
       final reading = state.reading;
       if (reading != null) {
         emit(TemperatureState.loaded(reading: reading, weather: cached));
-      } else {
-        emit(TemperatureState.loading(weather: cached));
       }
     } on Exception {
       // Corrupt cache must not block startup.
@@ -105,8 +107,8 @@ class TemperatureCubit extends Cubit<TemperatureState> {
       weather = await _weatherRepository.fetchOutsideWeather(
         location: location,
       );
-      final persist = _persistWeather;
-      if (persist != null && weather != null) {
+      final persist = persistWeather;
+      if (persist != null) {
         await persist(weather);
       }
     } on Exception catch (error) {
@@ -114,7 +116,7 @@ class TemperatureCubit extends Cubit<TemperatureState> {
       weather = state.weather;
       if (weather == null) {
         try {
-          weather = await _loadCachedWeather?.call();
+          weather = await loadCachedWeather?.call();
         } on Exception {
           weather = null;
         }

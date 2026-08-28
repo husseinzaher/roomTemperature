@@ -577,6 +577,108 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'{count} ساعات'**
   String refreshIntervalHours(int count);
+
+  /// No description provided for @placeHistory.
+  ///
+  /// In ar, this message translates to:
+  /// **'سجل المواقع'**
+  String get placeHistory;
+
+  /// No description provided for @enablePlaceHistory.
+  ///
+  /// In ar, this message translates to:
+  /// **'تفعيل سجل الأماكن'**
+  String get enablePlaceHistory;
+
+  /// No description provided for @placeHistoryHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'تجميع الإقامات القريبة في زيارات. تُحفظ على هذا الجهاز فقط.'**
+  String get placeHistoryHint;
+
+  /// No description provided for @viewPlaces.
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض الأماكن'**
+  String get viewPlaces;
+
+  /// No description provided for @deletePlaceHistory.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف كل سجل الأماكن'**
+  String get deletePlaceHistory;
+
+  /// No description provided for @deletePlaceHistoryConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'سيُحذف كل مكان وزيارة محفوظة على هذا الجهاز. لا يمكن التراجع.'**
+  String get deletePlaceHistoryConfirm;
+
+  /// No description provided for @places.
+  ///
+  /// In ar, this message translates to:
+  /// **'الأماكن'**
+  String get places;
+
+  /// No description provided for @noPlacesYet.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا أماكن بعد. ابقَ في موقع لمدة ٣٠ دقيقة على الأقل مع تفعيل الموقع.'**
+  String get noPlacesYet;
+
+  /// No description provided for @noForecastYet.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توقعات محفوظة بعد. اتصل بالإنترنت لجلب الطقس الخارجي.'**
+  String get noForecastYet;
+
+  /// No description provided for @placeVisitCount.
+  ///
+  /// In ar, this message translates to:
+  /// **'{count} زيارات'**
+  String placeVisitCount(int count);
+
+  /// No description provided for @placeAverage.
+  ///
+  /// In ar, this message translates to:
+  /// **'المتوسط'**
+  String get placeAverage;
+
+  /// No description provided for @placeMin.
+  ///
+  /// In ar, this message translates to:
+  /// **'الأدنى'**
+  String get placeMin;
+
+  /// No description provided for @placeMax.
+  ///
+  /// In ar, this message translates to:
+  /// **'الأعلى'**
+  String get placeMax;
+
+  /// No description provided for @placeVisits.
+  ///
+  /// In ar, this message translates to:
+  /// **'الزيارات'**
+  String get placeVisits;
+
+  /// No description provided for @placeTotalTime.
+  ///
+  /// In ar, this message translates to:
+  /// **'الوقت الإجمالي'**
+  String get placeTotalTime;
+
+  /// No description provided for @placeLastVisit.
+  ///
+  /// In ar, this message translates to:
+  /// **'آخر زيارة'**
+  String get placeLastVisit;
+
+  /// No description provided for @deletePlace.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف هذا المكان'**
+  String get deletePlace;
 }
 
 class _AppLocalizationsDelegate
